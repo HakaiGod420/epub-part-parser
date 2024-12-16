@@ -1,38 +1,109 @@
-.App {
+/* Global Styles */
+body {
+  font-family: 'Arial', sans-serif;
+  background-color: #f4f4f9;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+h1 {
+  font-size: 2rem;
+  margin-bottom: 20px;
+  color: #333;
   text-align: center;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+/* Container Styles */
+.container {
+  max-width: 600px;
+  width: 90%;
+  background: #ffffff;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  padding: 20px;
+  overflow: hidden;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+/* File Uploader Styling */
+.file-uploader {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  margin-bottom: 20px;
 }
 
-.App-link {
-  color: #61dafb;
+.file-uploader label {
+  font-size: 1rem;
+  margin-bottom: 8px;
+  color: #333;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.file-uploader input[type="file"] {
+  display: none;
+}
+
+.file-uploader button {
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  font-size: 1rem;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.file-uploader button:hover {
+  background-color: #0056b3;
+}
+
+/* Chapter Selector Styling */
+.chapter-selector {
+  margin-bottom: 20px;
+}
+
+.chapter-selector h3 {
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.chapter-selector select {
+  width: 100%;
+  padding: 10px;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background-color: #f9f9f9;
+  transition: border-color 0.3s ease;
+}
+
+.chapter-selector select:focus {
+  border-color: #007bff;
+  outline: none;
+}
+
+/* Chapter Content Styling */
+.chapter-content {
+  padding: 15px;
+  background-color: #f9f9f9;
+  border-radius: 5px;
+  border: 1px solid #ddd;
+  line-height: 1.6;
+  font-size: 1rem;
+  color: #333;
+  white-space: pre-wrap;
+  overflow: auto;
+  max-height: 400px;
+}
+
+/* Error Message Styling */
+.error-message {
+  color: red;
+  font-size: 0.9rem;
+  margin-bottom: 10px;
+  text-align: center;
 }
