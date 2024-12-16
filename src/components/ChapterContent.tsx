@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Box, Typography, Button, Stack } from "@mui/material";
+import { stripHtml } from '../utils/stripHtml';
 
 interface ChapterContentProps {
   content: string;
@@ -13,11 +14,12 @@ const ChapterContent: React.FC<ChapterContentProps> = ({ content }) => {
     setShowFullContent(!showFullContent);
   };
 
+  const strippedContent = stripHtml(content);
   const previewContent =
-    content.length > previewLength ? content.substring(0, previewLength) + "..." : content;
+    strippedContent.length > previewLength ? strippedContent.substring(0, previewLength) + "..." : strippedContent;
 
   // Calculate word count
-  const wordCount = content.trim().split(/\s+/).length;
+  const wordCount = strippedContent.trim().split(/\s+/).length;
 
   return (
     <Box sx={{ padding: 2 }}>
@@ -30,7 +32,7 @@ const ChapterContent: React.FC<ChapterContentProps> = ({ content }) => {
         sx={{ marginBottom: 2 }}
       >
         <Typography variant="subtitle1" color="text.secondary">
-          Character Count: {content.length}
+          Character Count: {strippedContent.length}
         </Typography>
         <Typography variant="subtitle1" color="text.secondary">
           Word Count: {wordCount}
