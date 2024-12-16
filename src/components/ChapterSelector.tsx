@@ -12,52 +12,62 @@ import {
 interface ChapterSelectorProps {
   chapters: Array<{ label: string; href: string }>;
   onSelectChapter: (href: string) => void;
+  epubName: string; // Add epubName prop
 }
 
 const ChapterSelector: React.FC<ChapterSelectorProps> = ({
   chapters,
   onSelectChapter,
+  epubName,
 }) => {
-  // Track the index of the currently selected chapter
   const [currentChapterIndex, setCurrentChapterIndex] = useState<number>(0);
+  const [openedChapters, setOpenedChapters] = useState<string[]>([]);
 
   useEffect(() => {
-    // Load the stored chapter from localStorage
-    const storedChapter = localStorage.getItem("selectedChapter");
+    const storedChapters = localStorage.getItem(`${epubName}-openedChapters`);
+    if (storedChapters) {
+      setOpenedChapters(JSON.parse(storedChapters));
+    }
 
+    const storedChapter = localStorage.getItem(`${epubName}-selectedChapter`);
     if (storedChapter) {
       const storedIndex = chapters.findIndex(
         (chapter) => chapter.href === storedChapter
       );
-
-      // If valid chapter is found, set it
       if (storedIndex !== -1) {
         setCurrentChapterIndex(storedIndex);
         onSelectChapter(storedChapter);
       }
     }
-  }, [chapters, onSelectChapter]);
+  }, [chapters, onSelectChapter, epubName]);
 
-  useEffect(() => {
-    // Save the selected chapter to localStorage only if it's valid
-    if (chapters[currentChapterIndex]) {
-      const selectedChapter = chapters[currentChapterIndex].href;
+  const saveToLocalStorage = (index:number) => {
+    const selectedChapter = chapters[index].href;
       onSelectChapter(selectedChapter);
-    }
-  }, [currentChapterIndex, chapters, onSelectChapter]);
+      localStorage.setItem(`${epubName}-selectedChapter`, selectedChapter);
 
+      if (!openedChapters.includes(selectedChapter)) {
+        const newOpenedChapters = [...openedChapters, selectedChapter];
+        setOpenedChapters(newOpenedChapters);
+        localStorage.setItem(
+          `${epubName}-openedChapters`,
+          JSON.stringify(newOpenedChapters)
+        );
+      }
+  }
 
   const handleBack = () => {
     if (currentChapterIndex > 0) {
       setCurrentChapterIndex((prevIndex) => prevIndex - 1);
-      localStorage.setItem("selectedChapter", chapters[currentChapterIndex - 1].href);
+      saveToLocalStorage(currentChapterIndex - 1);
+      
     }
   };
 
   const handleNext = () => {
     if (currentChapterIndex < chapters.length - 1) {
       setCurrentChapterIndex((prevIndex) => prevIndex + 1);
-      localStorage.setItem("selectedChapter", chapters[currentChapterIndex + 1].href);
+      saveToLocalStorage(currentChapterIndex + 1);
     }
   };
 
@@ -67,7 +77,7 @@ const ChapterSelector: React.FC<ChapterSelectorProps> = ({
     );
     if (newIndex !== -1) {
       setCurrentChapterIndex(newIndex);
-      localStorage.setItem("selectedChapter", event.target.value);
+      saveToLocalStorage(newIndex);
     }
   };
 
@@ -82,7 +92,15 @@ const ChapterSelector: React.FC<ChapterSelectorProps> = ({
           onChange={handleSelectChange}
         >
           {chapters.map((chapter, index) => (
-            <MenuItem key={chapter.href} value={chapter.href}>
+            <MenuItem
+              key={chapter.href}
+              value={chapter.href}
+              style={{
+                backgroundColor: openedChapters.includes(chapter.href)
+                  ? "#e0f7fa"
+                  : "inherit",
+              }}
+            >
               {chapter.label}
             </MenuItem>
           ))}

@@ -3,6 +3,7 @@ import FileUploader from "./components/FileUploader";
 import ChapterSelector from "./components/ChapterSelector";
 import ChapterContent from "./components/ChapterContent";
 import ChapterSplitter from "./components/ChapterSplitter";
+import GearMenu from "./components/GearMenu"; // Import GearMenu
 import { parseEpub, getChapterContent } from "./utils/epubParser";
 import { stripHtml } from "./utils/stripHtml";
 import { Box, Container, Typography, Paper, Divider } from "@mui/material";
@@ -12,11 +13,13 @@ const App: React.FC = () => {
   const [chapters, setChapters] = useState<Array<{ label: string; href: string }>>([]);
   const [book, setBook] = useState<any>(null);
   const [chapterContent, setChapterContent] = useState<string>("");
+  const [epubName, setEpubName] = useState<string>("");
 
   const handleFileUpload = async (file: File) => {
     const { book, chapters } = await parseEpub(file);
     setBook(book);
     setChapters(chapters || []);
+    setEpubName(file.name); // Set the EPUB name
   };
 
   const handleSelectChapter = async (href: string) => {
@@ -38,9 +41,12 @@ const App: React.FC = () => {
   return (
     <Container maxWidth="md" className="container">
       {/* Heading */}
-      <Typography variant="h3" align="center" gutterBottom>
-        EPUB Reader
-      </Typography>
+      <Box display="flex" justifyContent="space-between" alignItems="center">
+        <Typography variant="h3" align="center" gutterBottom>
+          EPUB Reader
+        </Typography>
+        <GearMenu /> {/* Add GearMenu here */}
+      </Box>
       <Divider sx={{ marginBottom: 4 }} />
 
       {/* File Uploader */}
@@ -51,7 +57,7 @@ const App: React.FC = () => {
       {/* Chapter Selector */}
       {chapters.length > 0 && (
         <Paper elevation={3} sx={{ padding: 2, marginBottom: 4 }}>
-          <ChapterSelector chapters={chapters} onSelectChapter={handleSelectChapter} />
+          <ChapterSelector chapters={chapters} onSelectChapter={handleSelectChapter} epubName={epubName} />
         </Paper>
       )}
 
