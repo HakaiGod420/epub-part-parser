@@ -1,8 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import FileUploader from "./components/FileUploader";
 import ChapterSelector from "./components/ChapterSelector";
 import ChapterContent from "./components/ChapterContent";
+import ChapterSplitter from "./components/ChapterSplitter";
 import { parseEpub, getChapterContent } from "./utils/epubParser";
+import { stripHtml } from "./utils/stripHtml";
+import { Box, Container, Typography, Paper, Divider } from "@mui/material";
+import './App.css'; // Import the CSS file
 
 const App: React.FC = () => {
   const [chapters, setChapters] = useState<Array<{ label: string; href: string }>>([]);
@@ -22,15 +26,49 @@ const App: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    const selectedChapter = localStorage.getItem("selectedChapter");
+    if (selectedChapter && book) {
+      handleSelectChapter(selectedChapter).catch((error) => {
+        console.error("Failed to load chapter content:", error);
+      });
+    }
+  }, [book]);
+
   return (
-    <div>
-      <h1>EPUB Reader</h1>
-      <FileUploader onFileUpload={handleFileUpload} />
+    <Container maxWidth="md" className="container">
+      {/* Heading */}
+      <Typography variant="h3" align="center" gutterBottom>
+        EPUB Reader
+      </Typography>
+      <Divider sx={{ marginBottom: 4 }} />
+
+      {/* File Uploader */}
+      <Paper elevation={3} sx={{ padding: 2, marginBottom: 4 }}>
+        <FileUploader onFileUpload={handleFileUpload} />
+      </Paper>
+
+      {/* Chapter Selector */}
       {chapters.length > 0 && (
-        <ChapterSelector chapters={chapters} onSelectChapter={handleSelectChapter} />
+        <Paper elevation={3} sx={{ padding: 2, marginBottom: 4 }}>
+          <ChapterSelector chapters={chapters} onSelectChapter={handleSelectChapter} />
+        </Paper>
       )}
-      {chapterContent && <ChapterContent content={chapterContent} />}
-    </div>
+
+      {/* Chapter Splitter */}
+      {chapterContent && (
+        <Paper elevation={3} sx={{ padding: 2, marginBottom: 4 }}>
+          <ChapterSplitter content={stripHtml(chapterContent)} />
+        </Paper>
+      )}
+
+      {/* Chapter Content */}
+      {chapterContent && (
+        <Paper elevation={3} sx={{ padding: 2 }}>
+          <ChapterContent content={chapterContent} />
+        </Paper>
+      )}
+    </Container>
   );
 };
 
