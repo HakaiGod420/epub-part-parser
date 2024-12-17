@@ -14,6 +14,7 @@ const App: React.FC = () => {
   const [book, setBook] = useState<any>(null);
   const [chapterContent, setChapterContent] = useState<string>("");
   const [epubName, setEpubName] = useState<string>("");
+  const [currentTitle, setCurrentTitle] = useState<string | null | undefined>("");
 
   const handleFileUpload = async (file: File) => {
     const { book, chapters } = await parseEpub(file);
@@ -25,7 +26,8 @@ const App: React.FC = () => {
   const handleSelectChapter = async (href: string) => {
     if (book && href) {
       const content = await getChapterContent(book, href);
-      setChapterContent(content);
+      setCurrentTitle(content.title);
+      setChapterContent(content.content);
     }
   };
 
@@ -63,9 +65,11 @@ const App: React.FC = () => {
 
       {/* Chapter Splitter */}
       {chapterContent && (
-        <Paper elevation={3} sx={{ padding: 2, marginBottom: 4 }}>
-          <ChapterSplitter content={stripHtml(chapterContent)} />
-        </Paper>
+      <Paper elevation={3} sx={{ padding: 2, marginBottom: 4 }}>
+        <ChapterSplitter 
+          content={stripHtml(chapterContent).replace(currentTitle ?? "", "").trim()} 
+        />
+      </Paper>
       )}
 
       {/* Chapter Content */}

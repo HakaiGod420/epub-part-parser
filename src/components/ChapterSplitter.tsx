@@ -142,6 +142,13 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content }) => {
     }
   };
 
+  // Increment/Decrement Handlers
+  const handleIncreaseParts = () => setNumParts((prev) => prev + 1);
+  const handleDecreaseParts = () => setNumParts((prev) => Math.max(1, prev - 1));
+
+  const handleIncreaseCharCount = () => setCharCount((prev) => prev + 100);
+  const handleDecreaseCharCount = () => setCharCount((prev) => Math.max(100, prev - 100));
+
   return (
     <Box sx={{ padding: 2, maxWidth: 800, margin: "auto", textAlign: "center" }}>
       <Typography variant="h5" gutterBottom>
@@ -159,21 +166,37 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content }) => {
         label="Split by Character Count"
       />
       {splitByCharCount ? (
-        <TextField
-          label="Character Count per Part"
-          type="number"
-          value={charCount}
-          onChange={(e) => setCharCount(Number(e.target.value))}
-          sx={{ marginBottom: 2, width: "100%" }}
-        />
+        <Box sx={{ marginBottom: 2 }}>
+          <TextField
+            label="Character Count per Part"
+            type="number"
+            value={charCount}
+            onChange={(e) => setCharCount(Number(e.target.value))}
+            sx={{ marginBottom: 2, width: "100%" }}
+          />
+          <Button onClick={handleIncreaseCharCount} sx={{ marginRight: 1 }} variant="outlined">
+            +100
+          </Button>
+          <Button onClick={handleDecreaseCharCount} variant="outlined">
+            -100
+          </Button>
+        </Box>
       ) : (
-        <TextField
-          label="Number of Parts"
-          type="number"
-          value={numParts}
-          onChange={(e) => setNumParts(Number(e.target.value))}
-          sx={{ marginBottom: 2, width: "100%" }}
-        />
+        <Box sx={{ marginBottom: 2 }}>
+          <TextField
+            label="Number of Parts"
+            type="number"
+            value={numParts}
+            onChange={(e) => setNumParts(Number(e.target.value))}
+            sx={{ marginBottom: 2, width: "100%" }}
+          />
+          <Button onClick={handleIncreaseParts} sx={{ marginRight: 1 }} variant="outlined">
+            +1 Part
+          </Button>
+          <Button onClick={handleDecreaseParts} variant="outlined">
+            -1 Part
+          </Button>
+        </Box>
       )}
 
       <Accordion>
