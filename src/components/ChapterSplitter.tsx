@@ -10,8 +10,21 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  IconButton,
+  List,
+  ListItem,
+  ListItemText,
+  Grid2,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import ThumbUpIcon from "@mui/icons-material/ThumbUp";
+import CheckIcon from "@mui/icons-material/Check";
+
+interface DictionaryTerm {
+  term: string;
+  explanation: string;
+  likes: number;
+}
 
 interface ChapterSplitterProps {
   content: string;
@@ -25,32 +38,33 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content }) => {
   const [charCount, setCharCount] = useState<number>(1000);
   const [numParts, setNumParts] = useState<number>(2);
   const [splitByCharCount, setSplitByCharCount] = useState<boolean>(false);
+  const [includeDictionary, setIncludeDictionary] = useState<boolean>(false);
   const [optionalTexts, setOptionalTexts] = useState<string[]>(DEFAULT_TEXTS);
   const [optionalTextToggles, setOptionalTextToggles] = useState<boolean[]>(DEFAULT_TOGGLES);
+  const [dictionary, setDictionary] = useState<DictionaryTerm[]>([]);
+  const [copiedParts, setCopiedParts] = useState<Set<number>>(new Set());
 
   useEffect(() => {
-    try {
-      const storedTexts = JSON.parse(localStorage.getItem("optionalTexts") || "[]");
-      const storedToggles = JSON.parse(localStorage.getItem("optionalTextToggles") || "[]");
+    const storedTexts = JSON.parse(localStorage.getItem("optionalTexts") || "[]");
+    const storedToggles = JSON.parse(localStorage.getItem("optionalTextToggles") || "[]");
+    const storedDictionary = localStorage.getItem("dictionaryTerms");
 
-      if (Array.isArray(storedTexts) && storedTexts.length === DEFAULT_TEXTS.length) {
-        setOptionalTexts(storedTexts);
-      } else {
-        throw new Error("Invalid texts in localStorage");
+    setOptionalTexts(Array.isArray(storedTexts) && storedTexts.length ? storedTexts : DEFAULT_TEXTS);
+    setOptionalTextToggles(
+      Array.isArray(storedToggles) && storedToggles.length ? storedToggles : DEFAULT_TOGGLES
+    );
+
+    if (storedDictionary) {
+      try {
+        const parsedDictionary = JSON.parse(storedDictionary);
+        setDictionary(
+          Array.isArray(parsedDictionary)
+            ? parsedDictionary.map((term: any) => ({ ...term, likes: term.likes || 0 }))
+            : []
+        );
+      } catch {
+        console.error("Failed to parse dictionary data.");
       }
-
-      if (Array.isArray(storedToggles) && storedToggles.length === DEFAULT_TOGGLES.length) {
-        setOptionalTextToggles(storedToggles);
-      } else {
-        throw new Error("Invalid toggles in localStorage");
-      }
-    } catch (error) {
-      console.error("Error reading localStorage data:", error);
-      setOptionalTexts(DEFAULT_TEXTS);
-      setOptionalTextToggles(DEFAULT_TOGGLES);
-
-      localStorage.setItem("optionalTexts", JSON.stringify(DEFAULT_TEXTS));
-      localStorage.setItem("optionalTextToggles", JSON.stringify(DEFAULT_TOGGLES));
     }
   }, []);
 
@@ -61,144 +75,157 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content }) => {
     localStorage.setItem("optionalTextToggles", JSON.stringify(newToggles));
   };
 
-  const splitContentByCharCount = () => {
+  const handleOptionalTextChange = (index: number, value: string) => {
+    const newTexts = [...optionalTexts];
+    newTexts[index] = value;
+    handleOptionalTextChanges(newTexts, optionalTextToggles);
+  };
+
+  const handleOptionalToggleChange = (index: number, checked: boolean) => {
+    const newToggles = [...optionalTextToggles];
+    newToggles[index] = checked;
+    handleOptionalTextChanges(optionalTexts, newToggles);
+  };
+
+  const saveDictionary = (updatedDictionary: DictionaryTerm[]) => {
+    setDictionary(updatedDictionary);
+    localStorage.setItem("dictionaryTerms", JSON.stringify(updatedDictionary));
+  };
+
+  const handleLike = (index: number) => {
+    const updatedDictionary = [...dictionary];
+    updatedDictionary[index].likes += 1;
+    saveDictionary(updatedDictionary);
+  };
+
+  const addTermToDictionary = (term: string, explanation: string) => {
+    const updatedDictionary = [...dictionary, { term, explanation, likes: 0 }];
+    saveDictionary(updatedDictionary);
+  };
+
+  const splitContent = () => {
+    setCopiedParts(new Set()); // Reset copied state when splitting
     const sentences = content.split(/(?<=[.!?])\s+/);
-    let currentPart = "";
-    const newParts: string[] = [];
+    const totalLength = splitByCharCount
+      ? Math.ceil(sentences.reduce((acc, sentence) => acc + sentence.length, 0) / charCount)
+      : numParts;
 
-    sentences.forEach((sentence) => {
-      if (currentPart.length + sentence.length <= charCount) {
-        currentPart += sentence + " ";
-      } else {
-        newParts.push(currentPart.trim());
-        currentPart = sentence + " ";
-      }
-    });
-
-    if (currentPart) {
-      newParts.push(currentPart.trim());
-    }
+    const chunkSize = Math.ceil(sentences.length / totalLength);
+    const newParts = Array.from({ length: totalLength }, (_, i) =>
+      sentences.slice(i * chunkSize, (i + 1) * chunkSize).join(" ")
+    );
 
     setParts(
       newParts.map((part) => {
-        let optionalText = "";
-        optionalTextToggles.forEach((toggle, i) => {
-          if (toggle && optionalTexts[i]) {
-            optionalText += optionalTexts[i] + "\n";
-          }
-        });
-        return optionalText + part;
+        const dictionaryText = includeDictionary
+          ? dictionary
+              .sort((a, b) => b.likes - a.likes)
+              .map(({ term, explanation }) => `${term}: ${explanation}`)
+              .join("\n")
+          : "";
+
+        const optionalText = optionalTextToggles
+          .map((toggle, i) => (toggle ? optionalTexts[i] : ""))
+          .filter(Boolean)
+          .join("\n");
+
+        return `${dictionaryText ? `Dictionary Terms:\n${dictionaryText}\n\n` : ""}${
+          optionalText ? `${optionalText}\n\n` : ""
+        }${part}`;
       })
     );
   };
 
-  const splitContentByNumParts = () => {
-    const sentences = content.split(/(?<=[.!?])\s+/);
-    const totalLength = sentences.reduce((acc, sentence) => acc + sentence.length, 0);
-    const partLength = Math.ceil(totalLength / numParts);
-    let currentPart = "";
-    const newParts: string[] = [];
-
-    sentences.forEach((sentence) => {
-      if (currentPart.length + sentence.length <= partLength) {
-        currentPart += sentence + " ";
-      } else {
-        newParts.push(currentPart.trim());
-        currentPart = sentence + " ";
-      }
-    });
-
-    if (currentPart) {
-      newParts.push(currentPart.trim());
-    }
-
-    if (newParts.length > numParts) {
-      const lastPart = newParts.splice(numParts - 1).join(" ");
-      newParts.push(lastPart);
-    }
-
-    setParts(
-      newParts.map((part) => {
-        let optionalText = "";
-        optionalTextToggles.forEach((toggle, i) => {
-          if (toggle && optionalTexts[i]) {
-            optionalText += optionalTexts[i] + "\n";
-          }
-        });
-        return optionalText + part;
-      })
-    );
-  };
-
-  const handleCopy = (text: string) => {
+  const handleCopy = (index: number, text: string) => {
     navigator.clipboard.writeText(text);
+    setCopiedParts((prev) => new Set(prev).add(index));
   };
 
-  const handleSplit = () => {
-    if (splitByCharCount) {
-      splitContentByCharCount();
-    } else {
-      splitContentByNumParts();
-    }
-  };
-
-  // Increment/Decrement Handlers
-  const handleIncreaseParts = () => setNumParts((prev) => prev + 1);
-  const handleDecreaseParts = () => setNumParts((prev) => Math.max(1, prev - 1));
-
-  const handleIncreaseCharCount = () => setCharCount((prev) => prev + 100);
-  const handleDecreaseCharCount = () => setCharCount((prev) => Math.max(100, prev - 100));
+  const increaseParts = () => setNumParts((prev) => prev + 1);
+  const decreaseParts = () => setNumParts((prev) => Math.max(prev - 1, 1)); // Minimum 1 part
 
   return (
     <Box sx={{ padding: 2, maxWidth: 800, margin: "auto", textAlign: "center" }}>
       <Typography variant="h5" gutterBottom>
         Split Chapter Content
       </Typography>
-      <FormControlLabel
-        control={
-          <Switch
-            checked={splitByCharCount}
-            onChange={(e) => setSplitByCharCount(e.target.checked)}
-            name="splitByCharCount"
-            color="primary"
-          />
-        }
-        label="Split by Character Count"
-      />
-      {splitByCharCount ? (
-        <Box sx={{ marginBottom: 2 }}>
-          <TextField
-            label="Character Count per Part"
-            type="number"
-            value={charCount}
-            onChange={(e) => setCharCount(Number(e.target.value))}
-            sx={{ marginBottom: 2, width: "100%" }}
-          />
-          <Button onClick={handleIncreaseCharCount} sx={{ marginRight: 1 }} variant="outlined">
-            +100
-          </Button>
-          <Button onClick={handleDecreaseCharCount} variant="outlined">
-            -100
-          </Button>
-        </Box>
-      ) : (
-        <Box sx={{ marginBottom: 2 }}>
-          <TextField
-            label="Number of Parts"
-            type="number"
-            value={numParts}
-            onChange={(e) => setNumParts(Number(e.target.value))}
-            sx={{ marginBottom: 2, width: "100%" }}
-          />
-          <Button onClick={handleIncreaseParts} sx={{ marginRight: 1 }} variant="outlined">
-            +1 Part
-          </Button>
-          <Button onClick={handleDecreaseParts} variant="outlined">
-            -1 Part
-          </Button>
-        </Box>
-      )}
 
+      {/* Number of Parts */}
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 2 }}>
+        <Button
+          variant="outlined"
+          onClick={decreaseParts}
+          sx={{ marginRight: 1, borderRadius: "20px" }}
+        >
+          -1 Part
+        </Button>
+        <Typography variant="body1" sx={{ marginX: 2 }}>
+          Number of Parts: {numParts}
+        </Typography>
+        <Button
+          variant="outlined"
+          onClick={increaseParts}
+          sx={{ marginLeft: 1, borderRadius: "20px" }}
+        >
+          +1 Part
+        </Button>
+      </Box>
+
+      {/* Add Dictionary Term */}
+      <Accordion>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Typography>Dictionary Terms</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Box sx={{ display: "flex", gap: 2, marginBottom: 2 }}>
+            <TextField
+              label="Term"
+              variant="outlined"
+              fullWidth
+              id="new-term"
+              sx={{ flexGrow: 1 }}
+            />
+            <TextField
+              label="Explanation"
+              variant="outlined"
+              fullWidth
+              id="new-explanation"
+              sx={{ flexGrow: 2 }}
+            />
+            <Button
+              variant="contained"
+              onClick={() => {
+                const term = (document.getElementById("new-term") as HTMLInputElement).value;
+                const explanation = (
+                  document.getElementById("new-explanation") as HTMLInputElement
+                ).value;
+                if (term && explanation) {
+                  addTermToDictionary(term, explanation);
+                  (document.getElementById("new-term") as HTMLInputElement).value = "";
+                  (document.getElementById("new-explanation") as HTMLInputElement).value = "";
+                }
+              }}
+            >
+              Add
+            </Button>
+          </Box>
+          <List>
+            {dictionary.map((item, index) => (
+              <ListItem key={index} sx={{ display: "flex", justifyContent: "space-between" }}>
+                <ListItemText
+                  primary={item.term}
+                  secondary={`${item.explanation} (Likes: ${item.likes})`}
+                />
+                <IconButton onClick={() => handleLike(index)} color="primary">
+                  <ThumbUpIcon />
+                </IconButton>
+              </ListItem>
+            ))}
+          </List>
+        </AccordionDetails>
+      </Accordion>
+
+      {/* Optional Texts */}
       <Accordion>
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Typography>Optional Texts</Typography>
@@ -210,11 +237,7 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content }) => {
                 control={
                   <Switch
                     checked={optionalTextToggles[index]}
-                    onChange={(e) => {
-                      const newToggles = [...optionalTextToggles];
-                      newToggles[index] = e.target.checked;
-                      setOptionalTextToggles(newToggles);
-                    }}
+                    onChange={(e) => handleOptionalToggleChange(index, e.target.checked)}
                     name={`optionalTextToggle${index}`}
                     color="primary"
                   />
@@ -223,17 +246,10 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content }) => {
               />
               {optionalTextToggles[index] && (
                 <TextField
-                  label={`Optional Text ${index + 1}`}
                   value={text}
-                  onChange={(e) => {
-                    const newTexts = [...optionalTexts];
-                    newTexts[index] = e.target.value;
-                    handleOptionalTextChanges(newTexts, optionalTextToggles);
-                  }}
+                  onChange={(e) => handleOptionalTextChange(index, e.target.value)}
+                  label={`Optional Text ${index + 1}`}
                   fullWidth
-                  multiline
-                  rows={2}
-                  sx={{ marginBottom: 2 }}
                 />
               )}
             </Box>
@@ -241,15 +257,22 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content }) => {
         </AccordionDetails>
       </Accordion>
 
+      <FormControlLabel
+        control={
+          <Switch
+            checked={includeDictionary}
+            onChange={(e) => setIncludeDictionary(e.target.checked)}
+            name="includeDictionary"
+            color="primary"
+          />
+        }
+        label="Include Dictionary Terms"
+      />
+
       <Button
         variant="contained"
-        onClick={handleSplit}
-        sx={{
-          margin: "20px auto",
-          padding: "10px 20px",
-          display: "block",
-          borderRadius: "20px",
-        }}
+        onClick={splitContent}
+        sx={{ margin: "20px auto", padding: "10px 20px", display: "block", borderRadius: "20px" }}
       >
         Split Content
       </Button>
@@ -268,6 +291,7 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content }) => {
                   boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)",
                   textAlign: "left",
                   wordBreak: "break-word",
+                  position: "relative",
                 }}
               >
                 <Typography variant="h6">Part {index + 1}</Typography>
@@ -276,10 +300,21 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content }) => {
                 </Typography>
                 <Button
                   variant="outlined"
-                  onClick={() => handleCopy(part)}
-                  sx={{ marginTop: 2, display: "block" }}
+                  onClick={() => handleCopy(index, part)}
+                  sx={{
+                    marginTop: 2,
+                    display: "block",
+                    width: "100%",
+                    borderRadius: "20px",
+                    backgroundColor: copiedParts.has(index) ? "#4caf50" : "inherit",
+                    color: copiedParts.has(index) ? "#fff" : "inherit",
+                    "&:hover": {
+                      backgroundColor: copiedParts.has(index) ? "#45a049" : "#f5f5f5",
+                    },
+                  }}
+                  startIcon={copiedParts.has(index) ? <CheckIcon /> : undefined}
                 >
-                  Copy to Clipboard
+                  {copiedParts.has(index) ? "Copied" : "Copy to Clipboard"}
                 </Button>
               </Box>
             </Grid>

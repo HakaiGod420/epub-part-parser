@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { IconButton, Menu, MenuItem } from '@mui/material';
+import { IconButton, Menu, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
+import Dictionary from './Dictionary';
 
-const GearMenu: React.FC = () => {
+const GearMenu = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [dictionaryOpen, setDictionaryOpen] = useState(false);
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -18,6 +20,15 @@ const GearMenu: React.FC = () => {
     window.location.reload();
   };
 
+  const handleOpenDictionary = () => {
+    setDictionaryOpen(true);
+    handleClose();
+  };
+
+  const handleCloseDictionary = () => {
+    setDictionaryOpen(false);
+  };
+
   return (
     <>
       <IconButton onClick={handleClick}>
@@ -29,7 +40,19 @@ const GearMenu: React.FC = () => {
         onClose={handleClose}
       >
         <MenuItem onClick={handleDeleteLocalStorage}>Delete Local Storage & Restart</MenuItem>
+        <MenuItem onClick={handleOpenDictionary}>Open Dictionary</MenuItem>
       </Menu>
+      <Dialog open={dictionaryOpen} onClose={handleCloseDictionary} fullWidth maxWidth="md">
+        <DialogTitle>Dictionary</DialogTitle>
+        <DialogContent>
+          <Dictionary />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDictionary} color="primary">
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 };
