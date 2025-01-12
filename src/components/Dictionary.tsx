@@ -10,12 +10,10 @@ import {
   List,
   ListItem,
   ListItemText,
-  Card,
-  CardContent,
   Typography,
   Box,
 } from '@mui/material';
-import { Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon } from '@mui/icons-material';
+import { Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon, Save as SaveIcon, UploadFile as UploadIcon } from '@mui/icons-material';
 
 const Dictionary = () => {
   const [terms, setTerms] = useState<{ term: string; explanation: string }[]>([]);
@@ -31,8 +29,6 @@ const Dictionary = () => {
         const parsedTerms = JSON.parse(storedTerms);
         if (Array.isArray(parsedTerms)) {
           setTerms(parsedTerms);
-        } else {
-          console.error('Invalid data format in localStorage');
         }
       } catch (error) {
         console.error('Failed to parse localStorage data:', error);
@@ -40,9 +36,7 @@ const Dictionary = () => {
     }
   }, []);
 
-  const handleClickOpen = () => {
-    setOpen(true);
-  };
+  const handleClickOpen = () => setOpen(true);
 
   const handleClose = () => {
     setOpen(false);
@@ -57,13 +51,10 @@ const Dictionary = () => {
       return;
     }
 
-    let updatedTerms;
-    if (editIndex !== null) {
-      updatedTerms = [...terms];
-      updatedTerms[editIndex] = { term: currentTerm, explanation: currentExplanation };
-    } else {
-      updatedTerms = [...terms, { term: currentTerm, explanation: currentExplanation }];
-    }
+    const updatedTerms = editIndex !== null
+      ? terms.map((term, index) => index === editIndex ? { term: currentTerm, explanation: currentExplanation } : term)
+      : [...terms, { term: currentTerm, explanation: currentExplanation }];
+
     setTerms(updatedTerms);
     localStorage.setItem('dictionaryTerms', JSON.stringify(updatedTerms));
     handleClose();
@@ -82,62 +73,90 @@ const Dictionary = () => {
     localStorage.setItem('dictionaryTerms', JSON.stringify(updatedTerms));
   };
 
+  const handleExport = () => {
+    const dataStr = JSON.stringify(terms, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'dictionaryTerms.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const importedTerms = JSON.parse(e.target?.result as string);
+          if (Array.isArray(importedTerms)) {
+            setTerms(importedTerms);
+            localStorage.setItem('dictionaryTerms', JSON.stringify(importedTerms));
+          } else {
+            alert('Invalid file format.');
+          }
+        } catch {
+          alert('Failed to read file.');
+        }
+      };
+      reader.readAsText(file);
+    }
+  };
+
   return (
-    <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
-      <Typography variant="h4" gutterBottom align="center" style={{ fontWeight: 600 }}>
+    <Box sx={{ padding: '20px', maxWidth: '500px', margin: '0 auto' }}>
+      <Typography variant="h4" align="center" gutterBottom>
         Dictionary
       </Typography>
-      <Button
-        variant="contained"
-        color="primary"
-        startIcon={<AddIcon />}
-        onClick={handleClickOpen}
-        style={{ borderRadius: '20px', marginBottom: '20px' }}
-      >
-        Add Term
-      </Button>
-      <List>
+      <Box display="flex" justifyContent="space-between" marginBottom={2}>
+        <Button variant="contained" startIcon={<AddIcon />} onClick={handleClickOpen}>
+          Add Term
+        </Button>
+        <Button variant="outlined" startIcon={<SaveIcon />} onClick={handleExport}>
+          Export
+        </Button>
+        <label htmlFor="file-upload" style={{ display: 'inline-block' }}>
+          <input
+            id="file-upload"
+            type="file"
+            accept=".json"
+            onChange={handleImport}
+            style={{ display: 'none' }}
+          />
+          <Button variant="outlined" startIcon={<UploadIcon />} component="span">
+            Import
+          </Button>
+        </label>
+      </Box>
+      <List sx={{ bgcolor: 'background.paper', borderRadius: '8px', boxShadow: 1 }}>
         {terms.map((item, index) => (
-          <Card
+          <ListItem
             key={index}
-            style={{
-              marginBottom: '15px',
-              borderRadius: '15px',
-              background: '#f9f9f9',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: '10px 15px',
-            }}
+            sx={{ borderBottom: '1px solid #e0e0e0', '&:last-child': { borderBottom: 0 } }}
+            secondaryAction={
+              <Box>
+                <IconButton edge="end" onClick={() => handleEdit(index)}>
+                  <EditIcon />
+                </IconButton>
+                <IconButton edge="end" onClick={() => handleDelete(index)}>
+                  <DeleteIcon />
+                </IconButton>
+              </Box>
+            }
           >
-            <Box>
-              <Typography variant="h6" style={{ fontWeight: 500 }}>
-                {item.term}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                {item.explanation}
-              </Typography>
-            </Box>
-            <Box>
-              <IconButton
-                edge="end"
-                aria-label="edit"
-                onClick={() => handleEdit(index)}
-                style={{ marginRight: '10px' }}
-              >
-                <EditIcon />
-              </IconButton>
-              <IconButton edge="end" aria-label="delete" onClick={() => handleDelete(index)}>
-                <DeleteIcon />
-              </IconButton>
-            </Box>
-          </Card>
+            <ListItemText
+              primary={item.term}
+              secondary={item.explanation}
+              primaryTypographyProps={{ fontWeight: 500 }}
+            />
+          </ListItem>
         ))}
       </List>
+
       <Dialog open={open} onClose={handleClose} fullWidth>
-        <DialogTitle style={{ textAlign: 'center', fontWeight: 600 }}>
-          {editIndex !== null ? 'Edit Term' : 'Add Term'}
-        </DialogTitle>
+        <DialogTitle>{editIndex !== null ? 'Edit Term' : 'Add Term'}</DialogTitle>
         <DialogContent>
           <TextField
             autoFocus
@@ -146,34 +165,25 @@ const Dictionary = () => {
             fullWidth
             value={currentTerm}
             onChange={(e) => setCurrentTerm(e.target.value)}
-            style={{ marginBottom: '15px', borderRadius: '10px' }}
           />
           <TextField
             margin="dense"
             label="Explanation"
             fullWidth
-            value={currentExplanation}
-            onChange={(e) => setCurrentExplanation(e.target.value)}
             multiline
             rows={3}
-            style={{ borderRadius: '10px' }}
+            value={currentExplanation}
+            onChange={(e) => setCurrentExplanation(e.target.value)}
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleClose} style={{ borderRadius: '20px' }}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSave}
-            variant="contained"
-            color="primary"
-            style={{ borderRadius: '20px' }}
-          >
+          <Button onClick={handleClose}>Cancel</Button>
+          <Button onClick={handleSave} variant="contained">
             Save
           </Button>
         </DialogActions>
       </Dialog>
-    </div>
+    </Box>
   );
 };
 
