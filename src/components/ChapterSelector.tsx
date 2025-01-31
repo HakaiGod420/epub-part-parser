@@ -6,8 +6,8 @@ import {
   MenuItem,
   FormControl,
   Button,
-  Snackbar,
   Alert,
+  SelectChangeEvent,
 } from "@mui/material";
 
 interface ChapterSelectorProps {
@@ -24,7 +24,6 @@ const ChapterSelector: React.FC<ChapterSelectorProps> = ({
   const [currentChapterIndex, setCurrentChapterIndex] = useState<number>(0);
   const [openedChapters, setOpenedChapters] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null); // Error state
-  const [isSnackbarOpen, setIsSnackbarOpen] = useState(false); // Snackbar visibility
 
   useEffect(() => {
     try {
@@ -46,7 +45,6 @@ const ChapterSelector: React.FC<ChapterSelectorProps> = ({
     } catch (err) {
       console.error("Error loading chapters:", err);
       setError("Failed to load chapters from storage.");
-      setIsSnackbarOpen(true);
     }
   }, [chapters, onSelectChapter, epubName]);
 
@@ -67,7 +65,6 @@ const ChapterSelector: React.FC<ChapterSelectorProps> = ({
     } catch (err) {
       console.error("Error saving chapter:", err);
       setError("Failed to save chapter selection.");
-      setIsSnackbarOpen(true);
     }
   };
 
@@ -80,7 +77,6 @@ const ChapterSelector: React.FC<ChapterSelectorProps> = ({
     } catch (err) {
       console.error("Error navigating back:", err);
       setError("Failed to load the previous chapter.");
-      setIsSnackbarOpen(true);
     }
   };
 
@@ -93,11 +89,10 @@ const ChapterSelector: React.FC<ChapterSelectorProps> = ({
     } catch (err) {
       console.error("Error navigating next:", err);
       setError("Failed to load the next chapter.");
-      setIsSnackbarOpen(true);
     }
   };
 
-  const handleSelectChange = (event: React.ChangeEvent<{ value: unknown }>) => {
+  const handleSelectChange = (event: SelectChangeEvent<string>) => {
     try {
       const newIndex = chapters.findIndex(
         (chapter) => chapter.href === event.target.value
@@ -109,13 +104,11 @@ const ChapterSelector: React.FC<ChapterSelectorProps> = ({
     } catch (err) {
       console.error("Error selecting chapter:", err);
       setError("Failed to load the selected chapter.");
-      setIsSnackbarOpen(true);
     }
   };
 
-  const handleCloseSnackbar = () => {
-    setIsSnackbarOpen(false);
-    setError(null); // Clear error message
+  const handleCloseError = () => {
+    setError(null);
   };
 
   return (
@@ -130,8 +123,27 @@ const ChapterSelector: React.FC<ChapterSelectorProps> = ({
         backgroundColor: "#f9f9f9",
         borderRadius: 2,
         boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.1)",
+        position: "relative", // Ensure relative positioning for the alert
       }}
     >
+      {/* Top Alert for Errors */}
+      {error && (
+        <Alert
+          severity="error"
+          onClose={handleCloseError}
+          sx={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 10,
+            borderRadius: 0,
+          }}
+        >
+          {error}
+        </Alert>
+      )}
+
       <Typography
         variant="h5"
         gutterBottom
@@ -147,7 +159,7 @@ const ChapterSelector: React.FC<ChapterSelectorProps> = ({
       <FormControl fullWidth sx={{ marginBottom: 2 }}>
         <Select
           value={chapters[currentChapterIndex]?.href || ""}
-          onChange={() => handleSelectChange}
+          onChange={handleSelectChange}
           displayEmpty
           sx={{
             backgroundColor: "#fff",
@@ -225,17 +237,6 @@ const ChapterSelector: React.FC<ChapterSelectorProps> = ({
       >
         Chapter {currentChapterIndex + 1} of {chapters.length}
       </Typography>
-
-      {/* Snackbar for Error Messages */}
-      <Snackbar
-        open={isSnackbarOpen}
-        autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
-      >
-        <Alert severity="error" onClose={handleCloseSnackbar}>
-          {error}
-        </Alert>
-      </Snackbar>
     </Box>
   );
 };

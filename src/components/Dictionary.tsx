@@ -13,7 +13,13 @@ import {
   Typography,
   Box,
 } from '@mui/material';
-import { Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon, Save as SaveIcon, UploadFile as UploadIcon } from '@mui/icons-material';
+import {
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  Add as AddIcon,
+  Save as SaveIcon,
+  UploadFile as UploadIcon,
+} from '@mui/icons-material';
 
 const Dictionary = () => {
   const [terms, setTerms] = useState<{ term: string; explanation: string }[]>([]);
@@ -22,6 +28,7 @@ const Dictionary = () => {
   const [currentExplanation, setCurrentExplanation] = useState('');
   const [editIndex, setEditIndex] = useState<number | null>(null);
 
+  // Load data from localStorage on component mount
   useEffect(() => {
     const storedTerms = localStorage.getItem('dictionaryTerms');
     if (storedTerms) {
@@ -36,8 +43,10 @@ const Dictionary = () => {
     }
   }, []);
 
+  // Open dialog
   const handleClickOpen = () => setOpen(true);
 
+  // Close dialog and reset fields
   const handleClose = () => {
     setOpen(false);
     setCurrentTerm('');
@@ -45,21 +54,26 @@ const Dictionary = () => {
     setEditIndex(null);
   };
 
+  // Save or edit term
   const handleSave = () => {
     if (!currentTerm.trim() || !currentExplanation.trim()) {
       alert('Both fields are required.');
       return;
     }
 
-    const updatedTerms = editIndex !== null
-      ? terms.map((term, index) => index === editIndex ? { term: currentTerm, explanation: currentExplanation } : term)
-      : [...terms, { term: currentTerm, explanation: currentExplanation }];
+    const updatedTerms =
+      editIndex !== null
+        ? terms.map((term, index) =>
+            index === editIndex ? { term: currentTerm, explanation: currentExplanation } : term
+          )
+        : [...terms, { term: currentTerm, explanation: currentExplanation }];
 
     setTerms(updatedTerms);
     localStorage.setItem('dictionaryTerms', JSON.stringify(updatedTerms));
     handleClose();
   };
 
+  // Edit existing term
   const handleEdit = (index: number) => {
     setEditIndex(index);
     setCurrentTerm(terms[index].term);
@@ -67,12 +81,14 @@ const Dictionary = () => {
     setOpen(true);
   };
 
+  // Delete term
   const handleDelete = (index: number) => {
     const updatedTerms = terms.filter((_, i) => i !== index);
     setTerms(updatedTerms);
     localStorage.setItem('dictionaryTerms', JSON.stringify(updatedTerms));
   };
 
+  // Export terms as a JSON file
   const handleExport = () => {
     const dataStr = JSON.stringify(terms, null, 2);
     const blob = new Blob([dataStr], { type: 'application/json' });
@@ -84,6 +100,7 @@ const Dictionary = () => {
     URL.revokeObjectURL(url);
   };
 
+  // Import terms from a JSON file
   const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -110,6 +127,8 @@ const Dictionary = () => {
       <Typography variant="h4" align="center" gutterBottom>
         Dictionary
       </Typography>
+
+      {/* Add, Export, and Import Buttons */}
       <Box display="flex" justifyContent="space-between" marginBottom={2}>
         <Button variant="contained" startIcon={<AddIcon />} onClick={handleClickOpen}>
           Add Term
@@ -130,11 +149,16 @@ const Dictionary = () => {
           </Button>
         </label>
       </Box>
+
+      {/* List of Terms */}
       <List sx={{ bgcolor: 'background.paper', borderRadius: '8px', boxShadow: 1 }}>
         {terms.map((item, index) => (
           <ListItem
             key={index}
-            sx={{ borderBottom: '1px solid #e0e0e0', '&:last-child': { borderBottom: 0 } }}
+            sx={{
+              borderBottom: '1px solid #e0e0e0',
+              '&:last-child': { borderBottom: 0 },
+            }}
             secondaryAction={
               <Box>
                 <IconButton edge="end" onClick={() => handleEdit(index)}>
@@ -155,6 +179,7 @@ const Dictionary = () => {
         ))}
       </List>
 
+      {/* Add/Edit Term Dialog */}
       <Dialog open={open} onClose={handleClose} fullWidth>
         <DialogTitle>{editIndex !== null ? 'Edit Term' : 'Add Term'}</DialogTitle>
         <DialogContent>
