@@ -19,6 +19,7 @@ import {
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import CheckIcon from "@mui/icons-material/Check";
+import { encodingForModel} from "js-tiktoken"
 
 interface DictionaryTerm {
   term: string;
@@ -43,6 +44,9 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content }) => {
   const [optionalTextToggles, setOptionalTextToggles] = useState<boolean[]>(DEFAULT_TOGGLES);
   const [dictionary, setDictionary] = useState<DictionaryTerm[]>([]);
   const [copiedParts, setCopiedParts] = useState<Set<number>>(new Set());
+  const [wordCounts, setWordCounts] = useState<number[]>([]);
+  const [charCounts, setCharCounts] = useState<number[]>([]);
+  const [tokenCounts, setTokenCounts] = useState<number[]>([]);
 
   useEffect(() => {
     const storedTexts = JSON.parse(localStorage.getItem("optionalTexts") || "[]");
@@ -103,18 +107,28 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content }) => {
     saveDictionary(updatedDictionary);
   };
 
-  const splitContent = () => {
+  const splitContent = async () => {
     setCopiedParts(new Set()); // Reset copied state when splitting
+    const tokenizer = encodingForModel("gpt-4o"); // Use GPT-4 encoding
+  
     const sentences = content.split(/(?<=[.!?])\s+/);
     const totalLength = splitByCharCount
       ? Math.ceil(sentences.reduce((acc, sentence) => acc + sentence.length, 0) / charCount)
       : numParts;
-
+  
     const chunkSize = Math.ceil(sentences.length / totalLength);
     const newParts = Array.from({ length: totalLength }, (_, i) =>
       sentences.slice(i * chunkSize, (i + 1) * chunkSize).join(" ")
     );
-
+  
+    const newWordCounts = newParts.map((part) => part.split(/\s+/).filter(Boolean).length);
+    const newCharCounts = newParts.map((part) => part.length);
+    const newTokenCounts = newParts.map((part) => tokenizer.encode(part).length); // Tokenize each part
+  
+    setWordCounts(newWordCounts);
+    setCharCounts(newCharCounts);
+    setTokenCounts(newTokenCounts); // Set token counts
+  
     setParts(
       newParts.map((part) => {
         const dictionaryText = includeDictionary
@@ -123,12 +137,12 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content }) => {
               .map(({ term, explanation }) => `${term}: ${explanation}`)
               .join("\n")
           : "";
-
+  
         const optionalText = optionalTextToggles
           .map((toggle, i) => (toggle ? optionalTexts[i] : ""))
           .filter(Boolean)
           .join("\n");
-
+  
         return `${dictionaryText ? `Dictionary Terms:\n${dictionaryText}\n\n` : ""}${
           optionalText ? `${optionalText}\n\n` : ""
         }${part}`;
@@ -278,49 +292,45 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content }) => {
       </Button>
 
       <Grid container spacing={2} justifyContent="center">
-        {parts.map((part, index) => {
-          const charCount = part.length;
-          const wordCount = part.split(/\s+/).filter(Boolean).length;
-          return (
-            <Grid item key={index} xs={12} sm={6}>
-              <Box
-                sx={{
-                  padding: 2,
-                  border: "1px solid #ddd",
-                  borderRadius: "10px",
-                  boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)",
-                  textAlign: "left",
-                  wordBreak: "break-word",
-                  position: "relative",
-                }}
-              >
-                <Typography variant="h6">Part {index + 1}</Typography>
-                <Typography variant="body2" color="textSecondary">
-                  {charCount} characters, {wordCount} words
-                </Typography>
-                <Button
-                  variant="outlined"
-                  onClick={() => handleCopy(index, part)}
-                  sx={{
-                    marginTop: 2,
-                    display: "block",
-                    width: "100%",
-                    borderRadius: "20px",
-                    backgroundColor: copiedParts.has(index) ? "#4caf50" : "inherit",
-                    color: copiedParts.has(index) ? "#fff" : "inherit",
-                    "&:hover": {
-                      backgroundColor: copiedParts.has(index) ? "#45a049" : "#f5f5f5",
-                    },
-                  }}
-                  startIcon={copiedParts.has(index) ? <CheckIcon /> : undefined}
-                >
-                  {copiedParts.has(index) ? "Copied" : "Copy to Clipboard"}
-                </Button>
-              </Box>
-            </Grid>
-          );
-        })}
-      </Grid>
+  {parts.map((part, index) => (
+    <Grid item key={index} xs={12} sm={6}>
+      <Box
+        sx={{
+          padding: 2,
+          border: "1px solid #ddd",
+          borderRadius: "10px",
+          boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)",
+          textAlign: "left",
+          wordBreak: "break-word",
+          position: "relative",
+        }}
+      >
+        <Typography variant="h6">Part {index + 1}</Typography>
+        <Typography variant="body2" color="textSecondary">
+          {charCounts[index]} characters, {wordCounts[index]} words, {tokenCounts[index]} tokens
+        </Typography>
+        <Button
+          variant="outlined"
+          onClick={() => handleCopy(index, part)}
+          sx={{
+            marginTop: 2,
+            display: "block",
+            width: "100%",
+            borderRadius: "20px",
+            backgroundColor: copiedParts.has(index) ? "#4caf50" : "inherit",
+            color: copiedParts.has(index) ? "#fff" : "inherit",
+            "&:hover": {
+              backgroundColor: copiedParts.has(index) ? "#45a049" : "#f5f5f5",
+            },
+          }}
+          startIcon={copiedParts.has(index) ? <CheckIcon /> : undefined}
+        >
+          {copiedParts.has(index) ? "Copied" : "Copy to Clipboard"}
+        </Button>
+      </Box>
+    </Grid>
+  ))}
+</Grid>
     </Box>
   );
 };
