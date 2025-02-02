@@ -9,11 +9,13 @@ import { stripHtml } from "./utils/stripHtml";
 import { Box, Container, Typography, Paper, Divider, Alert, IconButton } from "@mui/material";
 import './App.css'; // Import the CSS file
 import CloseIcon from '@mui/icons-material/Close'; // Import CloseIcon
+import { ImageGallery } from "./components/ImageGallery";
 
 const App: React.FC = () => {
   const [chapters, setChapters] = useState<Array<{ label: string; href: string }>>([]);
   const [book, setBook] = useState<any>(null);
   const [chapterContent, setChapterContent] = useState<string>("");
+  const [images, setImages] = useState<Uint8Array[]>([]);
   const [epubName, setEpubName] = useState<string>("");
   const [currentTitle, setCurrentTitle] = useState<string | null | undefined>("");
   const [error, setError] = useState<string | null>(null);
@@ -31,6 +33,7 @@ const App: React.FC = () => {
         const content = await getChapterContent(book, href);
         setCurrentTitle(content.title);
         setChapterContent(content.content);
+        setImages(content.images);
       }
       catch (error){
         console.error("Failed to load chapter content:", error);
@@ -174,7 +177,7 @@ const App: React.FC = () => {
               fontSize: '0.875rem'
             }
           }}>
-            <ChapterContent content={chapterContent} />
+            <ChapterContent content={chapterContent} images={images} />
           </Paper>
         </>
       )}
