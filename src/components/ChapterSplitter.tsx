@@ -19,7 +19,9 @@ import {
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import CheckIcon from "@mui/icons-material/Check";
+import EditIcon from "@mui/icons-material/Edit";
 import { encodingForModel} from "js-tiktoken"
+import { DictionaryEditModal } from "./DictionaryEditModal";
 
 interface DictionaryTerm {
   term: string;
@@ -47,6 +49,8 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content }) => {
   const [wordCounts, setWordCounts] = useState<number[]>([]);
   const [charCounts, setCharCounts] = useState<number[]>([]);
   const [tokenCounts, setTokenCounts] = useState<number[]>([]);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingTermIndex, setEditingTermIndex] = useState<number | null>(null);
 
   useEffect(() => {
     const storedTexts = JSON.parse(localStorage.getItem("optionalTexts") || "[]");
@@ -91,6 +95,19 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content }) => {
     handleOptionalTextChanges(optionalTexts, newToggles);
   };
 
+  const handleCopy = (index: number, text: string) => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text)
+        .then(() => {
+          setCopiedParts((prev) => new Set(prev).add(index));
+        })
+        .catch((err) => console.error('Failed to copy: ', err));
+    } else {
+      console.error('Clipboard API not supported');
+      // Implement a fallback method here
+    }
+  };
+  
   const saveDictionary = (updatedDictionary: DictionaryTerm[]) => {
     setDictionary(updatedDictionary);
     localStorage.setItem("dictionaryTerms", JSON.stringify(updatedDictionary));
@@ -150,10 +167,28 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content }) => {
     );
   };
 
-  const handleCopy = (index: number, text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedParts((prev) => new Set(prev).add(index));
+  const handleEditOpen = (index: number | null) => {
+    setEditingTermIndex(index);
+    setEditModalOpen(true);
   };
+
+  const handleEditClose = () => {
+    setEditModalOpen(false);
+    setEditingTermIndex(null);
+  };
+
+  const handleEditSave = (newTerm: string, newExplanation: string) => {
+    const updatedDictionary = [...dictionary];
+    if (editingTermIndex !== null) {
+      updatedDictionary[editingTermIndex] = {
+        ...updatedDictionary[editingTermIndex],
+        term: newTerm,
+        explanation: newExplanation,
+      };
+    }
+    saveDictionary(updatedDictionary);
+  };
+  
 
   const increaseParts = () => setNumParts((prev) => prev + 1);
   const decreaseParts = () => setNumParts((prev) => Math.max(prev - 1, 1)); // Minimum 1 part
@@ -163,6 +198,17 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content }) => {
       <Typography variant="h5" gutterBottom>
         Split Chapter Content
       </Typography>
+
+      <DictionaryEditModal
+        open={editModalOpen}
+        handleClose={handleEditClose}
+        term={
+          editingTermIndex !== null
+            ? { term: dictionary[editingTermIndex].term, explanation: dictionary[editingTermIndex].explanation }
+            : { term: "", explanation: "" }
+        }
+        onSave={handleEditSave}
+      />
 
       {/* Number of Parts */}
       <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 2 }}>
@@ -224,18 +270,21 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content }) => {
             </Button>
           </Box>
           <List>
-            {dictionary.map((item, index) => (
-              <ListItem key={index} sx={{ display: "flex", justifyContent: "space-between" }}>
-                <ListItemText
-                  primary={item.term}
-                  secondary={`${item.explanation} (Likes: ${item.likes})`}
-                />
-                <IconButton onClick={() => handleLike(index)} color="primary">
-                  <ThumbUpIcon />
-                </IconButton>
-              </ListItem>
-            ))}
-          </List>
+      {dictionary.map((item, index) => (
+        <ListItem key={index} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <ListItemText primary={item.term} secondary={item.explanation} />
+          <Box>
+            <IconButton onClick={() => handleLike(index)} color="primary">
+              <ThumbUpIcon />
+            </IconButton>
+            <Typography variant="caption">{item.likes}</Typography>
+            <IconButton onClick={() => handleEditOpen(index)} color="primary">
+              <EditIcon />
+            </IconButton>
+          </Box>
+        </ListItem>
+      ))}
+    </List>
         </AccordionDetails>
       </Accordion>
 
