@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Modal, ImageList, ImageListItem, IconButton } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 
@@ -9,34 +9,36 @@ interface ImageGalleryProps {
 export const ImageGallery: React.FC<ImageGalleryProps> = ({ images }) => {
   const [open, setOpen] = useState<boolean>(false);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [imageURLs, setImageURLs] = useState<string[]>([]);
 
-  // Memoize the creation of image URLs
-  const imageURLs = useMemo(() => {
-    return images.map((imgData) => {
+  // Convert Uint8Array images to blob URLs once the images array changes
+  useEffect(() => {
+    const urls = images.map((imgData) => {
+      // Adjust the MIME type as needed (e.g., "image/png")
       const blob = new Blob([imgData.buffer], { type: 'image/jpeg' });
       return URL.createObjectURL(blob);
     });
+    setImageURLs(urls);
+
+    // Cleanup: revoke each URL when the component unmounts or images change
+    return () => {
+      urls.forEach((url) => URL.revokeObjectURL(url));
+    };
   }, [images]);
 
-  // Cleanup function to revoke object URLs
-  useEffect(() => {
-    return () => {
-      imageURLs.forEach((url) => URL.revokeObjectURL(url));
-    };
-  }, [imageURLs]);
-
-  const handleOpen = useCallback((index: number) => {
+  const handleOpen = (index: number) => {
     setSelectedIndex(index);
     setOpen(true);
-  }, []);
+  };
 
-  const handleClose = useCallback(() => {
+  const handleClose = () => {
     setOpen(false);
     setSelectedIndex(null);
-  }, []);
+  };
 
   return (
     <Box>
+      {/* Render the image grid */}
       <ImageList variant="masonry" cols={3} gap={8}>
         {imageURLs.map((url, index) => (
           <ImageListItem key={index} onClick={() => handleOpen(index)}>
@@ -50,6 +52,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ images }) => {
         ))}
       </ImageList>
 
+      {/* Modal for displaying the selected image */}
       <Modal open={open} onClose={handleClose}>
         <Box
           sx={{
