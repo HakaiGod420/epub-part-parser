@@ -1,6 +1,6 @@
 {
-  "short_name": "EPP",
-  "name": "Epub Part Parser",
+  "short_name": "ChapterCraft",
+  "name": "ChapterCraft - EPUB Content Splitter",
   "icons": [
     {
       "src": "favicon.ico",

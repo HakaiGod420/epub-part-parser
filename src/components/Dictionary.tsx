@@ -21,7 +21,11 @@ import {
   UploadFile as UploadIcon,
 } from '@mui/icons-material';
 
-const Dictionary = () => {
+interface DictionaryProps {
+  bookTitle?: string;
+}
+
+const Dictionary: React.FC<DictionaryProps> = ({ bookTitle = "" }) => {
   const [terms, setTerms] = useState<{ term: string; explanation: string }[]>([]);
   const [open, setOpen] = useState(false);
   const [currentTerm, setCurrentTerm] = useState('');
@@ -90,12 +94,18 @@ const Dictionary = () => {
 
   // Export terms as a JSON file
   const handleExport = () => {
+    console.log("Dictionary export - received bookTitle:", bookTitle);
     const dataStr = JSON.stringify(terms, null, 2);
     const blob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'dictionaryTerms.json';
+    
+    // Create filename with book title
+    const sanitizedTitle = bookTitle.replace(/[^a-zA-Z0-9\s\-_]/g, '').trim() || 'UnknownBook';
+    console.log("Sanitized title for filename:", sanitizedTitle);
+    a.download = `${sanitizedTitle}_Dictionary.json`;
+    
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -130,10 +140,35 @@ const Dictionary = () => {
 
       {/* Add, Export, and Import Buttons */}
       <Box display="flex" justifyContent="space-between" marginBottom={2}>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={handleClickOpen}>
+        <Button 
+          variant="contained" 
+          startIcon={<AddIcon />} 
+          onClick={handleClickOpen}
+          sx={{
+            backgroundColor: '#4caf50',
+            color: '#fff',
+            borderRadius: '20px',
+            '&:hover': {
+              backgroundColor: '#45a049',
+            },
+          }}
+        >
           Add Term
         </Button>
-        <Button variant="outlined" startIcon={<SaveIcon />} onClick={handleExport}>
+        <Button 
+          variant="outlined" 
+          startIcon={<SaveIcon />} 
+          onClick={handleExport}
+          sx={{
+            borderColor: '#4caf50',
+            color: '#4caf50',
+            borderRadius: '20px',
+            '&:hover': {
+              borderColor: '#45a049',
+              backgroundColor: 'rgba(76, 175, 80, 0.1)',
+            },
+          }}
+        >
           Export
         </Button>
         <label htmlFor="file-upload" style={{ display: 'inline-block' }}>
@@ -144,7 +179,20 @@ const Dictionary = () => {
             onChange={handleImport}
             style={{ display: 'none' }}
           />
-          <Button variant="outlined" startIcon={<UploadIcon />} component="span">
+          <Button 
+            variant="outlined" 
+            startIcon={<UploadIcon />} 
+            component="span"
+            sx={{
+              borderColor: '#666',
+              color: '#fff',
+              borderRadius: '20px',
+              '&:hover': {
+                borderColor: '#888',
+                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+              },
+            }}
+          >
             Import
           </Button>
         </label>
@@ -202,8 +250,29 @@ const Dictionary = () => {
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleClose}>Cancel</Button>
-          <Button onClick={handleSave} variant="contained">
+          <Button 
+            onClick={handleClose}
+            sx={{
+              color: '#666',
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+              },
+            }}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleSave} 
+            variant="contained"
+            sx={{
+              backgroundColor: '#4caf50',
+              color: '#fff',
+              borderRadius: '20px',
+              '&:hover': {
+                backgroundColor: '#45a049',
+              },
+            }}
+          >
             Save
           </Button>
         </DialogActions>

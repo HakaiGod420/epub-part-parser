@@ -53,8 +53,31 @@ import React, { useState, useEffect } from 'react';
          />
        </DialogContent>
        <DialogActions>
-         <Button onClick={handleClose}>Cancel</Button>
-         <Button onClick={handleSave}>Save</Button>
+         <Button 
+           onClick={handleClose}
+           sx={{
+             color: '#666',
+             '&:hover': {
+               backgroundColor: 'rgba(255, 255, 255, 0.08)',
+             },
+           }}
+         >
+           Cancel
+         </Button>
+         <Button 
+           onClick={handleSave}
+           variant="contained"
+           sx={{
+             backgroundColor: '#4caf50',
+             color: '#fff',
+             borderRadius: '20px',
+             '&:hover': {
+               backgroundColor: '#45a049',
+             },
+           }}
+         >
+           Save
+         </Button>
        </DialogActions>
      </Dialog>
    );

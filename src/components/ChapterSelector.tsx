@@ -120,9 +120,9 @@ const ChapterSelector: React.FC<ChapterSelectorProps> = ({
         alignItems: "center",
         textAlign: "center",
         margin: "0 auto",
-        backgroundColor: "#f9f9f9",
+        backgroundColor: 'background.paper',
         borderRadius: 2,
-        boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.1)",
+        boxShadow: 3,
         position: "relative", // Ensure relative positioning for the alert
       }}
     >
@@ -150,7 +150,7 @@ const ChapterSelector: React.FC<ChapterSelectorProps> = ({
         sx={{
           fontWeight: 600,
           marginBottom: 2,
-          color: "#333",
+          color: 'text.primary',
         }}
       >
         Select Chapter
@@ -162,7 +162,7 @@ const ChapterSelector: React.FC<ChapterSelectorProps> = ({
           onChange={handleSelectChange}
           displayEmpty
           sx={{
-            backgroundColor: "#fff",
+            backgroundColor: 'background.default',
             borderRadius: 1,
           }}
         >
@@ -170,9 +170,9 @@ const ChapterSelector: React.FC<ChapterSelectorProps> = ({
             <MenuItem
               key={chapter.href}
               value={chapter.href}
-              style={{
+              sx={{
                 backgroundColor: openedChapters.includes(chapter.href)
-                  ? "#e0f7fa"
+                  ? "action.selected"
                   : "inherit",
               }}
             >
@@ -195,12 +195,16 @@ const ChapterSelector: React.FC<ChapterSelectorProps> = ({
           onClick={handleBack}
           disabled={currentChapterIndex === 0}
           sx={{
-            backgroundColor: currentChapterIndex === 0 ? "#ccc" : "#1976d2",
-            color: "#fff",
             textTransform: "none",
-            "&:hover": {
-              backgroundColor:
-                currentChapterIndex === 0 ? "#ccc" : "#1565c0",
+            backgroundColor: '#4caf50',
+            color: '#fff',
+            borderRadius: '20px',
+            '&:hover': {
+              backgroundColor: '#45a049',
+            },
+            '&:disabled': {
+              backgroundColor: '#424242',
+              color: '#666',
             },
           }}
         >
@@ -211,15 +215,16 @@ const ChapterSelector: React.FC<ChapterSelectorProps> = ({
           onClick={handleNext}
           disabled={currentChapterIndex === chapters.length - 1}
           sx={{
-            backgroundColor:
-              currentChapterIndex === chapters.length - 1 ? "#ccc" : "#1976d2",
-            color: "#fff",
             textTransform: "none",
-            "&:hover": {
-              backgroundColor:
-                currentChapterIndex === chapters.length - 1
-                  ? "#ccc"
-                  : "#1565c0",
+            backgroundColor: '#4caf50',
+            color: '#fff',
+            borderRadius: '20px',
+            '&:hover': {
+              backgroundColor: '#45a049',
+            },
+            '&:disabled': {
+              backgroundColor: '#424242',
+              color: '#666',
             },
           }}
         >
@@ -232,7 +237,7 @@ const ChapterSelector: React.FC<ChapterSelectorProps> = ({
         sx={{
           marginTop: 3,
           fontWeight: 500,
-          color: "#555",
+          color: 'text.secondary',
         }}
       >
         Chapter {currentChapterIndex + 1} of {chapters.length}

@@ -4,12 +4,11 @@ import ChapterSelector from "./components/ChapterSelector";
 import ChapterContent from "./components/ChapterContent";
 import ChapterSplitter from "./components/ChapterSplitter";
 import GearMenu from "./components/GearMenu"; // Import GearMenu
-import { parseEpub, getChapterContent } from "./utils/epubParser";
+import { parseEpub, getChapterContent, getBookTitle } from "./utils/epubParser";
 import { stripHtml } from "./utils/stripHtml";
-import { Box, Container, Typography, Paper, Divider, Alert, IconButton } from "@mui/material";
+import { Box, Container, Typography, Paper, Alert, IconButton } from "@mui/material";
 import './App.css'; // Import the CSS file
 import CloseIcon from '@mui/icons-material/Close'; // Import CloseIcon
-import { ImageGallery } from "./components/ImageGallery";
 
 const App: React.FC = () => {
   const [chapters, setChapters] = useState<Array<{ label: string; href: string }>>([]);
@@ -17,6 +16,7 @@ const App: React.FC = () => {
   const [chapterContent, setChapterContent] = useState<string>("");
   const [images, setImages] = useState<Uint8Array[]>([]);
   const [epubName, setEpubName] = useState<string>("");
+  const [bookTitle, setBookTitle] = useState<string>("");
   const [currentTitle, setCurrentTitle] = useState<string | null | undefined>("");
   const [error, setError] = useState<string | null>(null);
 
@@ -25,6 +25,9 @@ const App: React.FC = () => {
     setBook(book);
     setChapters(chapters || []);
     setEpubName(file.name); // Set the EPUB name
+    const extractedTitle = getBookTitle(book);
+    console.log("Book title extracted:", extractedTitle);
+    setBookTitle(extractedTitle); // Extract and set the book title
   };
 
   const handleSelectChapter = async (href: string) => {
@@ -74,6 +77,8 @@ const App: React.FC = () => {
           borderRadius: 1,
           borderLeft: '4px solid',
           borderColor: 'error.main',
+          backgroundColor: 'error.dark',
+          color: 'error.contrastText',
           '& .MuiAlert-message': {
             flex: 1,
             paddingRight: 1,
@@ -106,7 +111,7 @@ const App: React.FC = () => {
         padding: 3,
         backgroundColor: 'background.paper',
         borderRadius: 2,
-        boxShadow: 1
+        boxShadow: 3
       }}
     >
       <Typography 
@@ -118,31 +123,42 @@ const App: React.FC = () => {
           color: 'primary.main'
         }}
       >
-        EPUB Reader
+        EPUB Content Splitter
       </Typography>
-      <GearMenu />
+      {bookTitle && (
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            color: 'text.secondary',
+            fontStyle: 'italic',
+            marginTop: 1
+          }}
+        >
+          Book: {bookTitle}
+        </Typography>
+      )}
+      <GearMenu bookTitle={bookTitle} />
     </Box>
 
     {/* Main Content */}
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       {/* File Upload Section */}
-      <Paper elevation={0} sx={{ 
+      <Paper elevation={2} sx={{ 
         padding: 3,
         borderRadius: 3,
-        border: '1px solid',
-        borderColor: 'divider',
-        backgroundColor: 'background.default'
+        backgroundColor: 'background.paper',
+        boxShadow: 3
       }}>
         <FileUploader onFileUpload={handleFileUpload} />
       </Paper>
 
       {/* Chapter Selection */}
       {chapters.length > 0 && (
-        <Paper elevation={0} sx={{ 
+        <Paper elevation={2} sx={{ 
           padding: 3,
           borderRadius: 3,
-          border: '1px solid',
-          borderColor: 'divider'
+          backgroundColor: 'background.paper',
+          boxShadow: 3
         }}>
           <ChapterSelector 
             chapters={chapters} 
@@ -155,22 +171,24 @@ const App: React.FC = () => {
       {/* Chapter Processing */}
       {chapterContent && (
         <>
-          <Paper elevation={0} sx={{ 
+          <Paper elevation={2} sx={{ 
             padding: 3,
             borderRadius: 3,
-            border: '1px solid',
-            borderColor: 'divider'
+            backgroundColor: 'background.paper',
+            boxShadow: 3
           }}>
             <ChapterSplitter 
               content={stripHtml(chapterContent).replace(currentTitle ?? "", "").trim()} 
+              chapterTitle={currentTitle || undefined}
+              bookTitle={bookTitle}
             />
           </Paper>
 
-          <Paper elevation={0} sx={{ 
+          <Paper elevation={2} sx={{ 
             padding: 3,
             borderRadius: 3,
-            border: '1px solid',
-            borderColor: 'divider',
+            backgroundColor: 'background.paper',
+            boxShadow: 3,
             '& pre': { 
               whiteSpace: 'pre-wrap',
               fontFamily: 'monospace',

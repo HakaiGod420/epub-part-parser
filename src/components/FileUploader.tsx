@@ -71,7 +71,21 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFileUpload }) => {
           </Typography>
         </Paper>
       )}
-      <Button variant="contained" component="label" color="primary">
+      <Button 
+        variant="contained" 
+        component="label" 
+        sx={{
+          backgroundColor: '#4caf50',
+          color: '#fff',
+          borderRadius: '20px',
+          padding: '10px 30px',
+          fontSize: '16px',
+          fontWeight: 'bold',
+          '&:hover': {
+            backgroundColor: '#45a049',
+          },
+        }}
+      >
         Choose File
         <input
           type="file"
@@ -88,10 +102,34 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFileUpload }) => {
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => handleDialogClose(false)} color="primary">
+          <Button 
+            onClick={() => handleDialogClose(false)} 
+            variant="outlined"
+            sx={{
+              color: '#fff',
+              borderColor: '#666',
+              borderRadius: '20px',
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                borderColor: '#888',
+              },
+            }}
+          >
             Cancel
           </Button>
-          <Button onClick={() => handleDialogClose(true)} color="primary" autoFocus>
+          <Button 
+            onClick={() => handleDialogClose(true)} 
+            autoFocus
+            variant="contained"
+            sx={{
+              backgroundColor: '#4caf50',
+              color: '#fff',
+              borderRadius: '20px',
+              '&:hover': {
+                backgroundColor: '#45a049',
+              },
+            }}
+          >
             Confirm
           </Button>
         </DialogActions>

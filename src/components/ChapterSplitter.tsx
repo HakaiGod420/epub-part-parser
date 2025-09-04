@@ -17,7 +17,6 @@ import {
   Grid2,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import CheckIcon from "@mui/icons-material/Check";
 import { encodingForModel} from "js-tiktoken"
 import EditIcon from "@mui/icons-material/Edit";
@@ -26,22 +25,24 @@ import EditIcon from "@mui/icons-material/Edit";
 interface DictionaryTerm {
   term: string;
   explanation: string;
-  likes: number;
 }
 
 interface ChapterSplitterProps {
   content: string;
+  chapterTitle?: string;
+  bookTitle?: string;
 }
 
-const DEFAULT_TEXTS = ["", "", ""];
-const DEFAULT_TOGGLES = [false, false, false];
+const DEFAULT_TEXTS = ["Translate to english:", "", ""];
+const DEFAULT_TOGGLES = [true, false, false];
 
-const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content }) => {
+const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content, chapterTitle, bookTitle = "" }) => {
   const [parts, setParts] = useState<string[]>([]);
   const [charCount, setCharCount] = useState<number>(1000);
-  const [numParts, setNumParts] = useState<number>(2);
+  const [numParts, setNumParts] = useState<number>(1);
   const [splitByCharCount, setSplitByCharCount] = useState<boolean>(false);
-  const [includeDictionary, setIncludeDictionary] = useState<boolean>(false);
+  const [includeDictionary, setIncludeDictionary] = useState<boolean>(true);
+  const [includeChapterTitle, setIncludeChapterTitle] = useState<boolean>(false);
   const [optionalTexts, setOptionalTexts] = useState<string[]>(DEFAULT_TEXTS);
   const [optionalTextToggles, setOptionalTextToggles] = useState<boolean[]>(DEFAULT_TOGGLES);
   const [dictionary, setDictionary] = useState<DictionaryTerm[]>([]);
@@ -67,7 +68,10 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content }) => {
         const parsedDictionary = JSON.parse(storedDictionary);
         setDictionary(
           Array.isArray(parsedDictionary)
-            ? parsedDictionary.map((term: any) => ({ ...term, likes: term.likes || 0 }))
+            ? parsedDictionary.map((term: any) => ({ 
+                term: term.term, 
+                explanation: term.explanation 
+              }))
             : []
         );
       } catch {
@@ -100,14 +104,8 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content }) => {
     localStorage.setItem("dictionaryTerms", JSON.stringify(updatedDictionary));
   };
 
-  const handleLike = (index: number) => {
-    const updatedDictionary = [...dictionary];
-    updatedDictionary[index].likes += 1;
-    saveDictionary(updatedDictionary);
-  };
-
   const addTermToDictionary = (term: string, explanation: string) => {
-    const updatedDictionary = [...dictionary, { term, explanation, likes: 0 }];
+    const updatedDictionary = [...dictionary, { term, explanation }];
     saveDictionary(updatedDictionary);
   };
 
@@ -134,10 +132,9 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content }) => {
     setTokenCounts(newTokenCounts); // Set token counts
   
     setParts(
-      newParts.map((part) => {
+      newParts.map((part, index) => {
         const dictionaryText = includeDictionary
           ? dictionary
-              .sort((a, b) => b.likes - a.likes)
               .map(({ term, explanation }) => `${term}: ${explanation}`)
               .join("\n")
           : "";
@@ -146,24 +143,42 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content }) => {
           .map((toggle, i) => (toggle ? optionalTexts[i] : ""))
           .filter(Boolean)
           .join("\n");
+
+        const chapterTitleText = includeChapterTitle && chapterTitle && index === 0
+          ? `Chapter: ${chapterTitle}` 
+          : "";
   
         return `${dictionaryText ? `Dictionary Terms:\n${dictionaryText}\n\n` : ""}${
           optionalText ? `${optionalText}\n\n` : ""
-        }${part}`;
+        }${chapterTitleText ? `${chapterTitleText}\n\n` : ""}${part}`;
       })
     );
   };
 
-  const handleCopy = (index: number, text: string) => {
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(text)
-        .then(() => {
-          setCopiedParts((prev) => new Set(prev).add(index));
-        })
-        .catch((err) => console.error('Failed to copy: ', err));
-    } else {
-      console.error('Clipboard API not supported');
-      // Implement a fallback method here
+  const handleCopy = async (index: number, text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedParts((prev) => new Set(prev).add(index));
+    } catch (err) {
+      console.error('Failed to copy: ', err);
+      // Fallback for older browsers or non-secure contexts
+      try {
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        
+        document.execCommand('copy');
+        setCopiedParts((prev) => new Set(prev).add(index));
+        
+        document.body.removeChild(textArea);
+      } catch (fallbackErr) {
+        console.error('Fallback copy failed: ', fallbackErr);
+      }
     }
   };
 
@@ -194,7 +209,7 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content }) => {
 
   return (
     <Box sx={{ padding: 2, maxWidth: 800, margin: "auto", textAlign: "center" }}>
-      <Typography variant="h5" gutterBottom>
+      <Typography variant="h5" gutterBottom sx={{ color: 'text.primary', fontWeight: 600 }}>
         Split Chapter Content
       </Typography>
       <DictionaryEditModal
@@ -212,7 +227,16 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content }) => {
         <Button
           variant="outlined"
           onClick={decreaseParts}
-          sx={{ marginRight: 1, borderRadius: "20px" }}
+          sx={{ 
+            marginRight: 1, 
+            borderRadius: "20px",
+            borderColor: '#666',
+            color: '#fff',
+            '&:hover': {
+              borderColor: '#888',
+              backgroundColor: 'rgba(255, 255, 255, 0.08)',
+            },
+          }}
         >
           -1 Part
         </Button>
@@ -222,7 +246,16 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content }) => {
         <Button
           variant="outlined"
           onClick={increaseParts}
-          sx={{ marginLeft: 1, borderRadius: "20px" }}
+          sx={{ 
+            marginLeft: 1, 
+            borderRadius: "20px",
+            borderColor: '#666',
+            color: '#fff',
+            '&:hover': {
+              borderColor: '#888',
+              backgroundColor: 'rgba(255, 255, 255, 0.08)',
+            },
+          }}
         >
           +1 Part
         </Button>
@@ -262,6 +295,13 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content }) => {
                   (document.getElementById("new-explanation") as HTMLInputElement).value = "";
                 }
               }}
+              sx={{
+                backgroundColor: '#4caf50',
+                color: '#fff',
+                '&:hover': {
+                  backgroundColor: '#45a049',
+                },
+              }}
             >
               Add
             </Button>
@@ -271,11 +311,15 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content }) => {
               <ListItem key={index} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <ListItemText primary={item.term} secondary={item.explanation} />
                 <Box>
-                  <IconButton onClick={() => handleLike(index)} color="primary">
-                    <ThumbUpIcon />
-                  </IconButton>
-                  <Typography variant="caption">{item.likes}</Typography>
-                  <IconButton onClick={() => handleEditOpen(index)} color="primary">
+                  <IconButton 
+                    onClick={() => handleEditOpen(index)} 
+                    sx={{
+                      color: '#4caf50',
+                      '&:hover': {
+                        backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                      },
+                    }}
+                  >
                     <EditIcon />
                   </IconButton>
                 </Box>
@@ -299,7 +343,22 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content }) => {
                     checked={optionalTextToggles[index]}
                     onChange={(e) => handleOptionalToggleChange(index, e.target.checked)}
                     name={`optionalTextToggle${index}`}
-                    color="primary"
+                    sx={{
+                      '& .MuiSwitch-switchBase': {
+                        color: '#bdbdbd',
+                        '&.Mui-checked': {
+                          color: '#4caf50',
+                          '& + .MuiSwitch-track': {
+                            backgroundColor: '#4caf50',
+                            opacity: 0.6,
+                          },
+                        },
+                      },
+                      '& .MuiSwitch-track': {
+                        backgroundColor: '#757575',
+                        opacity: 0.4,
+                      },
+                    }}
                   />
                 }
                 label={`Enable Optional Text ${index + 1}`}
@@ -323,16 +382,68 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content }) => {
             checked={includeDictionary}
             onChange={(e) => setIncludeDictionary(e.target.checked)}
             name="includeDictionary"
-            color="primary"
+            sx={{
+              '& .MuiSwitch-switchBase': {
+                color: '#bdbdbd',
+                '&.Mui-checked': {
+                  color: '#4caf50',
+                  '& + .MuiSwitch-track': {
+                    backgroundColor: '#4caf50',
+                    opacity: 0.6,
+                  },
+                },
+              },
+              '& .MuiSwitch-track': {
+                backgroundColor: '#757575',
+                opacity: 0.4,
+              },
+            }}
           />
         }
         label="Include Dictionary Terms"
       />
 
+      <FormControlLabel
+        control={
+          <Switch
+            checked={includeChapterTitle}
+            onChange={(e) => setIncludeChapterTitle(e.target.checked)}
+            name="includeChapterTitle"
+            sx={{
+              '& .MuiSwitch-switchBase': {
+                color: '#bdbdbd',
+                '&.Mui-checked': {
+                  color: '#4caf50',
+                  '& + .MuiSwitch-track': {
+                    backgroundColor: '#4caf50',
+                    opacity: 0.6,
+                  },
+                },
+              },
+              '& .MuiSwitch-track': {
+                backgroundColor: '#757575',
+                opacity: 0.4,
+              },
+            }}
+          />
+        }
+        label="Include Chapter Title"
+      />
+
       <Button
         variant="contained"
         onClick={splitContent}
-        sx={{ margin: "20px auto", padding: "10px 20px", display: "block", borderRadius: "20px" }}
+        sx={{ 
+          margin: "20px auto", 
+          padding: "10px 20px", 
+          display: "block", 
+          borderRadius: "20px",
+          backgroundColor: '#4caf50',
+          color: '#fff',
+          '&:hover': {
+            backgroundColor: '#45a049',
+          },
+        }}
       >
         Split Content
       </Button>
@@ -343,16 +454,18 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content }) => {
       <Box
         sx={{
           padding: 2,
-          border: "1px solid #ddd",
+          border: "1px solid",
+          borderColor: 'divider',
           borderRadius: "10px",
-          boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)",
+          boxShadow: 3,
           textAlign: "left",
           wordBreak: "break-word",
           position: "relative",
+          backgroundColor: 'background.paper',
         }}
       >
-        <Typography variant="h6">Part {index + 1}</Typography>
-        <Typography variant="body2" color="textSecondary">
+        <Typography variant="h6" sx={{ color: 'text.primary' }}>Part {index + 1}</Typography>
+        <Typography variant="body2" color="text.secondary">
           {charCounts[index]} characters, {wordCounts[index]} words, {tokenCounts[index]} tokens
         </Typography>
         <Button
@@ -363,10 +476,12 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content }) => {
             display: "block",
             width: "100%",
             borderRadius: "20px",
-            backgroundColor: copiedParts.has(index) ? "#4caf50" : "inherit",
-            color: copiedParts.has(index) ? "#fff" : "inherit",
+            backgroundColor: copiedParts.has(index) ? "#4caf50" : "transparent",
+            color: copiedParts.has(index) ? "#fff" : "#fff",
+            borderColor: copiedParts.has(index) ? "#4caf50" : "#666",
             "&:hover": {
-              backgroundColor: copiedParts.has(index) ? "#45a049" : "#f5f5f5",
+              backgroundColor: copiedParts.has(index) ? "#45a049" : "rgba(255, 255, 255, 0.08)",
+              borderColor: copiedParts.has(index) ? "#45a049" : "#888",
             },
           }}
           startIcon={copiedParts.has(index) ? <CheckIcon /> : undefined}

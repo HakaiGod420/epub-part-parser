@@ -17,6 +17,48 @@ export const parseEpub = async (file: File) => {
 };
 
 /**
+ * Extract the title from EPUB metadata
+ */
+export const getBookTitle = (book: Book): string => {
+  try {
+    // Try multiple ways to get the title from the book metadata
+    let title = null;
+    
+    // Method 1: Try packaging.metadata.title
+    if ((book as any).packaging?.metadata?.title) {
+      title = (book as any).packaging.metadata.title;
+    }
+    
+    // Method 2: Try metadata.title directly
+    if (!title && (book as any).metadata?.title) {
+      title = (book as any).metadata.title;
+    }
+    
+    // Method 3: Try package.metadata.title
+    if (!title && (book as any).package?.metadata?.title) {
+      title = (book as any).package.metadata.title;
+    }
+    
+    // Method 4: Try spine.metadata.title
+    if (!title && (book as any).spine?.metadata?.title) {
+      title = (book as any).spine.metadata.title;
+    }
+    
+    if (title) {
+      const titleStr = typeof title === 'string' ? title : title.toString();
+      console.log("Extracted book title:", titleStr);
+      return titleStr;
+    }
+    
+    console.log("No book title found, using fallback");
+    return "Untitled Book";
+  } catch (error) {
+    console.error("Error extracting book title:", error);
+    return "Untitled Book";
+  }
+};
+
+/**
  * Loads a chapter’s content from the book.
  * 
  * If a container element is passed, its innerHTML is cleared (removing any previous images and content)

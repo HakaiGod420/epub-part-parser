@@ -34,7 +34,8 @@ const ChapterContent: React.FC<ChapterContentProps> = ({ content, images }) => {
         mx: "auto", 
         my: 4, 
         borderRadius: 2, 
-        backgroundColor: "background.paper" 
+        backgroundColor: "background.paper",
+        boxShadow: 3
       }}
     >
       {/* Character and Word Count Section */}
@@ -77,7 +78,18 @@ const ChapterContent: React.FC<ChapterContentProps> = ({ content, images }) => {
       {/* Show More/Show Less Button */}
       {strippedContent.length > previewLength && (
         <Box textAlign="center">
-          <Button variant="contained" onClick={handleToggleContent}>
+          <Button 
+            variant="contained" 
+            onClick={handleToggleContent}
+            sx={{
+              backgroundColor: '#4caf50',
+              color: '#fff',
+              borderRadius: '20px',
+              '&:hover': {
+                backgroundColor: '#45a049',
+              },
+            }}
+          >
             {showFullContent ? "Show Less" : "Show More"}
           </Button>
         </Box>

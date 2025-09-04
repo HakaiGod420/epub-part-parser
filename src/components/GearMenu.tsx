@@ -3,7 +3,11 @@ import { IconButton, Menu, MenuItem, Dialog, DialogTitle, DialogContent, DialogA
 import SettingsIcon from '@mui/icons-material/Settings';
 import Dictionary from './Dictionary';
 
-const GearMenu = () => {
+interface GearMenuProps {
+  bookTitle?: string;
+}
+
+const GearMenu: React.FC<GearMenuProps> = ({ bookTitle = "" }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [dictionaryOpen, setDictionaryOpen] = useState(false);
 
@@ -45,7 +49,7 @@ const GearMenu = () => {
       <Dialog open={dictionaryOpen} onClose={handleCloseDictionary} fullWidth maxWidth="md">
         <DialogTitle>Dictionary</DialogTitle>
         <DialogContent>
-          <Dictionary />
+          <Dictionary bookTitle={bookTitle} />
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDictionary} color="primary">
