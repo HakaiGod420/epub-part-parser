@@ -211,10 +211,6 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ open, onClose, text
   }, [open]);
 
   const handleTranslate = async () => {
-    console.log('Translation button clicked');
-    console.log('Service configured:', translationService.isConfigured());
-    console.log('Text length:', text?.length || 0);
-    
     if (!translationService.isConfigured()) {
       const errorMsg = 'Translation service not configured. Please set up your API key in settings.';
       console.error(errorMsg);
@@ -232,21 +228,17 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ open, onClose, text
     setIsTranslating(true);
     setError(null);
     setTranslatedText('');
-    console.log('Starting translation...');
 
     try {
       await translationService.translateTextStream(text, (chunk) => {
-        console.log('Received chunk:', chunk.length, 'characters');
         setTranslatedText(prev => prev + chunk);
       });
-      console.log('Translation completed successfully');
     } catch (err) {
       console.error('Translation error:', err);
       const errorMessage = err instanceof Error ? err.message : 'Translation failed';
       setError(errorMessage);
     } finally {
       setIsTranslating(false);
-      console.log('Translation process finished');
     }
   };
 

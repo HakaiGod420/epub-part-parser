@@ -36,7 +36,6 @@ const App: React.FC = () => {
     setChapters(chapters || []);
     setEpubName(file.name); // Set the EPUB name
     const extractedTitle = getBookTitle(book);
-    console.log("Book title extracted:", extractedTitle);
     setBookTitle(extractedTitle); // Extract and set the book title
   };
 

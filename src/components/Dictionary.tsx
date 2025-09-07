@@ -94,7 +94,6 @@ const Dictionary: React.FC<DictionaryProps> = ({ bookTitle = "" }) => {
 
   // Export terms as a JSON file
   const handleExport = () => {
-    console.log("Dictionary export - received bookTitle:", bookTitle);
     const dataStr = JSON.stringify(terms, null, 2);
     const blob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -103,7 +102,6 @@ const Dictionary: React.FC<DictionaryProps> = ({ bookTitle = "" }) => {
     
     // Create filename with book title
     const sanitizedTitle = bookTitle.replace(/[^a-zA-Z0-9\s\-_]/g, '').trim() || 'UnknownBook';
-    console.log("Sanitized title for filename:", sanitizedTitle);
     a.download = `${sanitizedTitle}_Dictionary.json`;
     
     a.click();

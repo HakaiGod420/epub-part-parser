@@ -46,11 +46,9 @@ export const getBookTitle = (book: Book): string => {
     
     if (title) {
       const titleStr = typeof title === 'string' ? title : title.toString();
-      console.log("Extracted book title:", titleStr);
       return titleStr;
     }
     
-    console.log("No book title found, using fallback");
     return "Untitled Book";
   } catch (error) {
     console.error("Error extracting book title:", error);
