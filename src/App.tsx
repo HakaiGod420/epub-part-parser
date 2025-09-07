@@ -7,9 +7,11 @@ import TranslationComponent from "./components/TranslationComponent";
 import GearMenu from "./components/GearMenu"; // Import GearMenu
 import { parseEpub, getChapterContent, getBookTitle } from "./utils/epubParser";
 import { stripHtml } from "./utils/stripHtml";
-import { Box, Container, Typography, Paper, Alert, IconButton } from "@mui/material";
+import { Box, Container, Typography, Paper, Alert, IconButton, Collapse } from "@mui/material";
 import './App.css'; // Import the CSS file
 import CloseIcon from '@mui/icons-material/Close'; // Import CloseIcon
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 
 const App: React.FC = () => {
   const [chapters, setChapters] = useState<Array<{ label: string; href: string }>>([]);
@@ -20,6 +22,13 @@ const App: React.FC = () => {
   const [bookTitle, setBookTitle] = useState<string>("");
   const [currentTitle, setCurrentTitle] = useState<string | null | undefined>("");
   const [error, setError] = useState<string | null>(null);
+
+  // Expand/Collapse state for each section
+  const [fileUploadExpanded, setFileUploadExpanded] = useState<boolean>(true);
+  const [chapterSelectionExpanded, setChapterSelectionExpanded] = useState<boolean>(true);
+  const [chapterSplitterExpanded, setChapterSplitterExpanded] = useState<boolean>(true);
+  const [chapterContentExpanded, setChapterContentExpanded] = useState<boolean>(true);
+  const [translationExpanded, setTranslationExpanded] = useState<boolean>(true);
 
   const handleFileUpload = async (file: File) => {
     const { book, chapters } = await parseEpub(file);
@@ -49,6 +58,13 @@ const App: React.FC = () => {
   const handleCloseError = () => {
     setError(null);
   }
+
+  // Toggle functions for expand/collapse
+  const toggleFileUpload = () => setFileUploadExpanded(!fileUploadExpanded);
+  const toggleChapterSelection = () => setChapterSelectionExpanded(!chapterSelectionExpanded);
+  const toggleChapterSplitter = () => setChapterSplitterExpanded(!chapterSplitterExpanded);
+  const toggleChapterContent = () => setChapterContentExpanded(!chapterContentExpanded);
+  const toggleTranslation = () => setTranslationExpanded(!translationExpanded);
 
   useEffect(() => {
     const selectedChapter = localStorage.getItem("selectedChapter");
@@ -145,27 +161,73 @@ const App: React.FC = () => {
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       {/* File Upload Section */}
       <Paper elevation={2} sx={{ 
-        padding: 3,
         borderRadius: 3,
         backgroundColor: 'background.paper',
         boxShadow: 3
       }}>
-        <FileUploader onFileUpload={handleFileUpload} />
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          padding: 2,
+          borderBottom: fileUploadExpanded ? '1px solid rgba(255, 255, 255, 0.12)' : 'none'
+        }}>
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+            File Upload
+          </Typography>
+          <IconButton 
+            onClick={toggleFileUpload}
+            sx={{ 
+              color: 'primary.main',
+              '&:hover': { backgroundColor: 'rgba(144, 202, 249, 0.08)' }
+            }}
+          >
+            {fileUploadExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+          </IconButton>
+        </Box>
+        <Collapse in={fileUploadExpanded}>
+          <Box sx={{ padding: 3 }}>
+            <FileUploader onFileUpload={handleFileUpload} />
+          </Box>
+        </Collapse>
       </Paper>
 
       {/* Chapter Selection */}
       {chapters.length > 0 && (
         <Paper elevation={2} sx={{ 
-          padding: 3,
           borderRadius: 3,
           backgroundColor: 'background.paper',
           boxShadow: 3
         }}>
-          <ChapterSelector 
-            chapters={chapters} 
-            onSelectChapter={handleSelectChapter} 
-            epubName={epubName} 
-          />
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            padding: 2,
+            borderBottom: chapterSelectionExpanded ? '1px solid rgba(255, 255, 255, 0.12)' : 'none'
+          }}>
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              Chapter Selection
+            </Typography>
+            <IconButton 
+              onClick={toggleChapterSelection}
+              sx={{ 
+                color: 'primary.main',
+                '&:hover': { backgroundColor: 'rgba(144, 202, 249, 0.08)' }
+              }}
+            >
+              {chapterSelectionExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+            </IconButton>
+          </Box>
+          <Collapse in={chapterSelectionExpanded}>
+            <Box sx={{ padding: 3 }}>
+              <ChapterSelector 
+                chapters={chapters} 
+                onSelectChapter={handleSelectChapter} 
+                epubName={epubName} 
+              />
+            </Box>
+          </Collapse>
         </Paper>
       )}
 
@@ -173,20 +235,42 @@ const App: React.FC = () => {
       {chapterContent && (
         <>
           <Paper elevation={2} sx={{ 
-            padding: 3,
             borderRadius: 3,
             backgroundColor: 'background.paper',
             boxShadow: 3
           }}>
-            <ChapterSplitter 
-              content={stripHtml(chapterContent).replace(currentTitle ?? "", "").trim()} 
-              chapterTitle={currentTitle || undefined}
-              bookTitle={bookTitle}
-            />
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              padding: 2,
+              borderBottom: chapterSplitterExpanded ? '1px solid rgba(255, 255, 255, 0.12)' : 'none'
+            }}>
+              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                Chapter Splitter
+              </Typography>
+              <IconButton 
+                onClick={toggleChapterSplitter}
+                sx={{ 
+                  color: 'primary.main',
+                  '&:hover': { backgroundColor: 'rgba(144, 202, 249, 0.08)' }
+                }}
+              >
+                {chapterSplitterExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+              </IconButton>
+            </Box>
+            <Collapse in={chapterSplitterExpanded}>
+              <Box sx={{ padding: 3 }}>
+                <ChapterSplitter 
+                  content={stripHtml(chapterContent).replace(currentTitle ?? "", "").trim()} 
+                  chapterTitle={currentTitle || undefined}
+                  bookTitle={bookTitle}
+                />
+              </Box>
+            </Collapse>
           </Paper>
 
           <Paper elevation={2} sx={{ 
-            padding: 3,
             borderRadius: 3,
             backgroundColor: 'background.paper',
             boxShadow: 3,
@@ -196,25 +280,72 @@ const App: React.FC = () => {
               fontSize: '0.875rem'
             }
           }}>
-            <ChapterContent 
-              content={chapterContent} 
-              images={images} 
-              chapterTitle={currentTitle || undefined}
-            />
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              padding: 2,
+              borderBottom: chapterContentExpanded ? '1px solid rgba(255, 255, 255, 0.12)' : 'none'
+            }}>
+              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                Chapter Content
+              </Typography>
+              <IconButton 
+                onClick={toggleChapterContent}
+                sx={{ 
+                  color: 'primary.main',
+                  '&:hover': { backgroundColor: 'rgba(144, 202, 249, 0.08)' }
+                }}
+              >
+                {chapterContentExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+              </IconButton>
+            </Box>
+            <Collapse in={chapterContentExpanded}>
+              <Box sx={{ padding: 3 }}>
+                <ChapterContent 
+                  content={chapterContent} 
+                  images={images} 
+                  chapterTitle={currentTitle || undefined}
+                />
+              </Box>
+            </Collapse>
           </Paper>
 
           {/* Translation Section - Separate from Chapter Content */}
           <Paper elevation={2} sx={{ 
-            padding: 3,
             borderRadius: 3,
             backgroundColor: 'background.paper',
             boxShadow: 3,
           }}>
-            <TranslationComponent 
-              text={stripHtml(chapterContent)} 
-              chapterTitle={currentTitle || undefined}
-              bookTitle={bookTitle}
-            />
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              padding: 2,
+              borderBottom: translationExpanded ? '1px solid rgba(255, 255, 255, 0.12)' : 'none'
+            }}>
+              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                Translation
+              </Typography>
+              <IconButton 
+                onClick={toggleTranslation}
+                sx={{ 
+                  color: 'primary.main',
+                  '&:hover': { backgroundColor: 'rgba(144, 202, 249, 0.08)' }
+                }}
+              >
+                {translationExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+              </IconButton>
+            </Box>
+            <Collapse in={translationExpanded}>
+              <Box sx={{ padding: 3 }}>
+                <TranslationComponent 
+                  text={stripHtml(chapterContent)} 
+                  chapterTitle={currentTitle || undefined}
+                  bookTitle={bookTitle}
+                />
+              </Box>
+            </Collapse>
           </Paper>
         </>
       )}
