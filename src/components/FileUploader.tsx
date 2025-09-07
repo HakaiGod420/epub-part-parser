@@ -88,6 +88,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFileUpload }) => {
       >
         Choose File
         <input
+          id="epub-file-input"
           type="file"
           accept=".epub"
           hidden
@@ -95,7 +96,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFileUpload }) => {
         />
       </Button>
       <Dialog open={openDialog} onClose={() => handleDialogClose(false)}>
-        <DialogTitle>Confirm File Upload</DialogTitle>
+        <DialogTitle sx={{ color: '#ffffff' }}>Confirm File Upload</DialogTitle>
         <DialogContent>
           <DialogContentText>
             A file has already been uploaded: {previousFileName}. Do you want to replace it with the new file?

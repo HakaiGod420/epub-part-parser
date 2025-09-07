@@ -14,7 +14,6 @@ import {
   List,
   ListItem,
   ListItemText,
-  Grid2,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import CheckIcon from "@mui/icons-material/Check";
@@ -365,6 +364,7 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content, chapterTitle
               />
               {optionalTextToggles[index] && (
                 <TextField
+                  id={`optional-text-${index}`}
                   value={text}
                   onChange={(e) => handleOptionalTextChange(index, e.target.value)}
                   label={`Optional Text ${index + 1}`}

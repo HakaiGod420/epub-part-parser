@@ -158,6 +158,7 @@ const ChapterSelector: React.FC<ChapterSelectorProps> = ({
 
       <FormControl fullWidth sx={{ marginBottom: 2 }}>
         <Select
+          id="chapter-selector"
           value={chapters[currentChapterIndex]?.href || ""}
           onChange={handleSelectChange}
           displayEmpty
@@ -168,6 +169,7 @@ const ChapterSelector: React.FC<ChapterSelectorProps> = ({
         >
           {chapters.map((chapter, index) => (
             <MenuItem
+              id={`chapter-menuitem-${index}`}
               key={chapter.href}
               value={chapter.href}
               sx={{

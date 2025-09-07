@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { IconButton, Menu, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
 import Dictionary from './Dictionary';
+import SettingsDialog from './SettingsDialog';
 
 interface GearMenuProps {
   bookTitle?: string;
@@ -10,6 +11,7 @@ interface GearMenuProps {
 const GearMenu: React.FC<GearMenuProps> = ({ bookTitle = "" }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [dictionaryOpen, setDictionaryOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -33,6 +35,15 @@ const GearMenu: React.FC<GearMenuProps> = ({ bookTitle = "" }) => {
     setDictionaryOpen(false);
   };
 
+  const handleOpenSettings = () => {
+    setSettingsOpen(true);
+    handleClose();
+  };
+
+  const handleCloseSettings = () => {
+    setSettingsOpen(false);
+  };
+
   return (
     <>
       <IconButton onClick={handleClick}>
@@ -43,11 +54,12 @@ const GearMenu: React.FC<GearMenuProps> = ({ bookTitle = "" }) => {
         open={Boolean(anchorEl)}
         onClose={handleClose}
       >
-        <MenuItem onClick={handleDeleteLocalStorage}>Delete Local Storage & Restart</MenuItem>
+        <MenuItem onClick={handleOpenSettings}>Translation Settings</MenuItem>
         <MenuItem onClick={handleOpenDictionary}>Open Dictionary</MenuItem>
+        <MenuItem onClick={handleDeleteLocalStorage}>Delete Local Storage & Restart</MenuItem>
       </Menu>
       <Dialog open={dictionaryOpen} onClose={handleCloseDictionary} fullWidth maxWidth="md">
-        <DialogTitle>Dictionary</DialogTitle>
+        <DialogTitle sx={{ color: '#ffffff' }}>Dictionary</DialogTitle>
         <DialogContent>
           <Dictionary bookTitle={bookTitle} />
         </DialogContent>
@@ -57,6 +69,7 @@ const GearMenu: React.FC<GearMenuProps> = ({ bookTitle = "" }) => {
           </Button>
         </DialogActions>
       </Dialog>
+      <SettingsDialog open={settingsOpen} onClose={handleCloseSettings} />
     </>
   );
 };

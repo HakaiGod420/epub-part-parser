@@ -32,9 +32,10 @@ import React, { useState, useEffect } from 'react';
      };
    return (
      <Dialog open={open} onClose={handleClose}>
-       <DialogTitle>Edit Dictionary Term</DialogTitle>
+       <DialogTitle sx={{ color: '#ffffff' }}>Edit Dictionary Term</DialogTitle>
        <DialogContent>
          <TextField
+           id="edit-term"
            autoFocus
            margin="dense"
            label="Term"
@@ -43,6 +44,7 @@ import React, { useState, useEffect } from 'react';
            onChange={(e) => setEditedTerm(e.target.value)}
          />
          <TextField
+           id="edit-explanation"
            margin="dense"
            label="Explanation"
            fullWidth

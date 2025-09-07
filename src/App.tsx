@@ -3,6 +3,7 @@ import FileUploader from "./components/FileUploader";
 import ChapterSelector from "./components/ChapterSelector";
 import ChapterContent from "./components/ChapterContent";
 import ChapterSplitter from "./components/ChapterSplitter";
+import TranslationComponent from "./components/TranslationComponent";
 import GearMenu from "./components/GearMenu"; // Import GearMenu
 import { parseEpub, getChapterContent, getBookTitle } from "./utils/epubParser";
 import { stripHtml } from "./utils/stripHtml";
@@ -195,7 +196,25 @@ const App: React.FC = () => {
               fontSize: '0.875rem'
             }
           }}>
-            <ChapterContent content={chapterContent} images={images} />
+            <ChapterContent 
+              content={chapterContent} 
+              images={images} 
+              chapterTitle={currentTitle || undefined}
+            />
+          </Paper>
+
+          {/* Translation Section - Separate from Chapter Content */}
+          <Paper elevation={2} sx={{ 
+            padding: 3,
+            borderRadius: 3,
+            backgroundColor: 'background.paper',
+            boxShadow: 3,
+          }}>
+            <TranslationComponent 
+              text={stripHtml(chapterContent)} 
+              chapterTitle={currentTitle || undefined}
+              bookTitle={bookTitle}
+            />
           </Paper>
         </>
       )}

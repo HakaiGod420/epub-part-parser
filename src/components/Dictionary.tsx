@@ -229,9 +229,10 @@ const Dictionary: React.FC<DictionaryProps> = ({ bookTitle = "" }) => {
 
       {/* Add/Edit Term Dialog */}
       <Dialog open={open} onClose={handleClose} fullWidth>
-        <DialogTitle>{editIndex !== null ? 'Edit Term' : 'Add Term'}</DialogTitle>
+        <DialogTitle sx={{ color: '#ffffff' }}>{editIndex !== null ? 'Edit Term' : 'Add Term'}</DialogTitle>
         <DialogContent>
           <TextField
+            id="dictionary-term"
             autoFocus
             margin="dense"
             label="Term"
@@ -240,6 +241,7 @@ const Dictionary: React.FC<DictionaryProps> = ({ bookTitle = "" }) => {
             onChange={(e) => setCurrentTerm(e.target.value)}
           />
           <TextField
+            id="dictionary-explanation"
             margin="dense"
             label="Explanation"
             fullWidth
