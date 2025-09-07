@@ -42,8 +42,12 @@ import {
   FormatAlignCenter as AlignCenterIcon,
   FormatAlignJustify as AlignJustifyIcon,
   AspectRatio as WidthIcon,
+  AutoAwesome as ExtractIcon,
 } from '@mui/icons-material';
 import { translationService } from '../utils/translationService';
+import { dictionaryExtractorService, ExtractedTerm } from '../utils/dictionaryExtractorService';
+import { dictionaryEventManager } from '../utils/dictionaryEventManager';
+import TermsExtractionPopup from './TermsExtractionPopup';
 
 interface TranslationModalProps {
   open: boolean;
@@ -126,6 +130,12 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ open, onClose, text
   const [copied, setCopied] = useState(false);
   const [currentTab, setCurrentTab] = useState(0);
   const [settings, setSettings] = useState<ModalSettings>(defaultModalSettings);
+  
+  // Dictionary extractor state
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [extractedTerms, setExtractedTerms] = useState<ExtractedTerm[]>([]);
+  const [extractionError, setExtractionError] = useState<string | null>(null);
+  const [showExtractionPopup, setShowExtractionPopup] = useState(false);
   
   // Use refs to track if we should save settings to avoid infinite loops
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -285,6 +295,56 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ open, onClose, text
     setSettings(prev => ({ ...prev, showOriginalText: event.target.checked }));
   }, []);
 
+  // Dictionary extractor handlers
+  const handleExtractTerms = async () => {
+    if (!translatedText.trim()) {
+      setExtractionError('No translated text available for term extraction.');
+      return;
+    }
+
+    if (!dictionaryExtractorService.isConfigured()) {
+      setExtractionError('Dictionary extractor is not configured. Please set up API key and model in settings.');
+      return;
+    }
+
+    setIsExtracting(true);
+    setExtractionError(null);
+    setExtractedTerms([]);
+
+    try {
+      const result = await dictionaryExtractorService.extractTerms(translatedText);
+      
+      if (result.success) {
+        setExtractedTerms(result.terms);
+        setShowExtractionPopup(true);
+      } else {
+        setExtractionError(result.error || 'Failed to extract terms');
+      }
+    } catch (error) {
+      console.error('Term extraction error:', error);
+      setExtractionError(`Term extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsExtracting(false);
+    }
+  };
+
+  const handleAddTermToDictionary = (term: ExtractedTerm) => {
+    const success = dictionaryEventManager.addTerm({
+      term: term.term,
+      explanation: term.explanation
+    });
+    
+    if (!success) {
+      console.warn(`Term "${term.term}" already exists in dictionary`);
+    }
+  };
+
+  const handleCloseExtractionPopup = () => {
+    setShowExtractionPopup(false);
+    setExtractedTerms([]);
+    setExtractionError(null);
+  };
+
   // Memoize the formatted text to prevent re-computation on every render
   const formatTranslatedText = useCallback((text: string) => {
     const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim());
@@ -323,6 +383,11 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ open, onClose, text
             textAlign: settings.textAlign,
             mb: 2,
             color: theme.text,
+            userSelect: 'text', // Enable text selection
+            WebkitUserSelect: 'text', // For Safari
+            MozUserSelect: 'text', // For Firefox
+            msUserSelect: 'text', // For IE/Edge
+            cursor: 'text', // Show text cursor
             '& em': {
               fontStyle: 'italic',
               color: theme.accent,
@@ -363,7 +428,22 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ open, onClose, text
         </IconButton>
       </DialogTitle>
 
-      <DialogContent sx={{ p: 0, backgroundColor: currentTheme.background }}>
+      <DialogContent sx={{ 
+        p: 0, 
+        backgroundColor: currentTheme.background,
+        userSelect: 'text', // Enable text selection for the entire dialog content
+        WebkitUserSelect: 'text',
+        MozUserSelect: 'text',
+        msUserSelect: 'text',
+        '& ::selection': { // Custom text selection styling
+          backgroundColor: currentTheme.accent + '40', // Semi-transparent accent color
+          color: currentTheme.text,
+        },
+        '& ::-moz-selection': { // Firefox text selection styling
+          backgroundColor: currentTheme.accent + '40',
+          color: currentTheme.text,
+        },
+      }}>
         <Box sx={{ borderBottom: 1, borderColor: currentTheme.border }}>
           <Tabs 
             value={currentTab} 
@@ -404,25 +484,50 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ open, onClose, text
               borderRadius: 1,
               border: `1px solid ${currentTheme.border}`,
             }}>
-              <Button
-                variant="contained"
-                startIcon={isTranslating ? <CircularProgress size={20} color="inherit" /> : <TranslateIcon />}
-                onClick={handleTranslate}
-                disabled={isTranslating || !text?.trim()}
-                sx={{
-                  backgroundColor: currentTheme.accent,
-                  color: '#ffffff',
-                  '&:hover': {
-                    backgroundColor: settings.theme === 'white' ? '#2e7d32' : '#45a049',
-                  },
-                  '&:disabled': {
-                    backgroundColor: currentTheme.border,
-                    color: currentTheme.secondary,
-                  },
-                }}
-              >
-                {isTranslating ? 'Translating...' : 'Translate Text'}
-              </Button>
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Button
+                  variant="contained"
+                  startIcon={isTranslating ? <CircularProgress size={20} color="inherit" /> : <TranslateIcon />}
+                  onClick={handleTranslate}
+                  disabled={isTranslating || !text?.trim()}
+                  sx={{
+                    backgroundColor: currentTheme.accent,
+                    color: '#ffffff',
+                    '&:hover': {
+                      backgroundColor: settings.theme === 'white' ? '#2e7d32' : '#45a049',
+                    },
+                    '&:disabled': {
+                      backgroundColor: currentTheme.border,
+                      color: currentTheme.secondary,
+                    },
+                  }}
+                >
+                  {isTranslating ? 'Translating...' : 'Translate Text'}
+                </Button>
+
+                {translatedText && (
+                  <Button
+                    variant="outlined"
+                    startIcon={isExtracting ? <CircularProgress size={20} color="inherit" /> : <ExtractIcon />}
+                    onClick={handleExtractTerms}
+                    disabled={isExtracting || !translatedText.trim() || !dictionaryExtractorService.isConfigured()}
+                    sx={{
+                      borderColor: '#ff9800',
+                      color: '#ff9800',
+                      '&:hover': {
+                        borderColor: '#f57c00',
+                        backgroundColor: 'rgba(255, 152, 0, 0.1)',
+                      },
+                      '&:disabled': {
+                        borderColor: currentTheme.border,
+                        color: currentTheme.secondary,
+                      },
+                    }}
+                  >
+                    {isExtracting ? 'Extracting...' : 'Extract Terms'}
+                  </Button>
+                )}
+              </Box>
 
               {translatedText && (
                 <Button
@@ -456,6 +561,19 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ open, onClose, text
               </Fade>
             )}
 
+            {/* Extraction Error Display */}
+            {extractionError && (
+              <Fade in={true}>
+                <Alert 
+                  severity="warning" 
+                  sx={{ mb: 3 }}
+                  onClose={() => setExtractionError(null)}
+                >
+                  {extractionError}
+                </Alert>
+              </Fade>
+            )}
+
             {/* Translation Progress */}
             {isTranslating && (
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
@@ -476,6 +594,10 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ open, onClose, text
                     mb: 3,
                     backgroundColor: currentTheme.paper,
                     border: `1px solid ${currentTheme.border}`,
+                    userSelect: 'text', // Enable text selection
+                    WebkitUserSelect: 'text',
+                    MozUserSelect: 'text',
+                    msUserSelect: 'text',
                   }}
                 >
                   <Typography variant="h6" sx={{ color: currentTheme.accent, mb: 2 }}>
@@ -490,6 +612,11 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ open, onClose, text
                       color: currentTheme.secondary,
                       textAlign: settings.textAlign,
                       whiteSpace: 'pre-wrap',
+                      userSelect: 'text', // Enable text selection
+                      WebkitUserSelect: 'text',
+                      MozUserSelect: 'text',
+                      msUserSelect: 'text',
+                      cursor: 'text',
                     }}
                   >
                     {text}
@@ -505,9 +632,20 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ open, onClose, text
                     backgroundColor: currentTheme.paper,
                     border: `2px solid ${currentTheme.accent}`,
                     borderRadius: 2,
+                    userSelect: 'text', // Enable text selection for the entire container
+                    WebkitUserSelect: 'text',
+                    MozUserSelect: 'text',
+                    msUserSelect: 'text',
                   }}
                 >
-                  <Box sx={{ maxWidth: `${settings.maxWidth}px`, mx: 'auto' }}>
+                  <Box sx={{ 
+                    maxWidth: `${settings.maxWidth}px`, 
+                    mx: 'auto',
+                    userSelect: 'text', // Enable text selection for the content box
+                    WebkitUserSelect: 'text',
+                    MozUserSelect: 'text',
+                    msUserSelect: 'text',
+                  }}>
                     {formatTranslatedText(translatedText)}
                   </Box>
                 </Paper>
@@ -924,6 +1062,16 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ open, onClose, text
           Close
         </Button>
       </DialogActions>
+
+      {/* Terms Extraction Popup */}
+      <TermsExtractionPopup
+        open={showExtractionPopup}
+        onClose={handleCloseExtractionPopup}
+        extractedTerms={extractedTerms}
+        isLoading={isExtracting}
+        error={extractionError}
+        onAddTerm={handleAddTermToDictionary}
+      />
     </Dialog>
   );
 };

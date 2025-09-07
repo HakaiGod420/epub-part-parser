@@ -20,6 +20,7 @@ import {
   Save as SaveIcon,
   UploadFile as UploadIcon,
 } from '@mui/icons-material';
+import { dictionaryEventManager } from '../utils/dictionaryEventManager';
 
 interface DictionaryProps {
   bookTitle?: string;
@@ -34,17 +35,19 @@ const Dictionary: React.FC<DictionaryProps> = ({ bookTitle = "" }) => {
 
   // Load data from localStorage on component mount
   useEffect(() => {
-    const storedTerms = localStorage.getItem('dictionaryTerms');
-    if (storedTerms) {
-      try {
-        const parsedTerms = JSON.parse(storedTerms);
-        if (Array.isArray(parsedTerms)) {
-          setTerms(parsedTerms);
-        }
-      } catch (error) {
-        console.error('Failed to parse localStorage data:', error);
-      }
-    }
+    const loadTerms = () => {
+      const terms = dictionaryEventManager.getTerms();
+      setTerms(terms);
+    };
+
+    // Load initial terms
+    loadTerms();
+
+    // Subscribe to dictionary updates
+    const unsubscribe = dictionaryEventManager.subscribe(loadTerms);
+
+    // Cleanup subscription on unmount
+    return unsubscribe;
   }, []);
 
   // Open dialog
@@ -74,6 +77,7 @@ const Dictionary: React.FC<DictionaryProps> = ({ bookTitle = "" }) => {
 
     setTerms(updatedTerms);
     localStorage.setItem('dictionaryTerms', JSON.stringify(updatedTerms));
+    dictionaryEventManager.notifyUpdate(); // Notify other components
     handleClose();
   };
 
@@ -90,6 +94,7 @@ const Dictionary: React.FC<DictionaryProps> = ({ bookTitle = "" }) => {
     const updatedTerms = terms.filter((_, i) => i !== index);
     setTerms(updatedTerms);
     localStorage.setItem('dictionaryTerms', JSON.stringify(updatedTerms));
+    dictionaryEventManager.notifyUpdate(); // Notify other components
   };
 
   // Export terms as a JSON file
@@ -119,6 +124,7 @@ const Dictionary: React.FC<DictionaryProps> = ({ bookTitle = "" }) => {
           if (Array.isArray(importedTerms)) {
             setTerms(importedTerms);
             localStorage.setItem('dictionaryTerms', JSON.stringify(importedTerms));
+            dictionaryEventManager.notifyUpdate(); // Notify other components
           } else {
             alert('Invalid file format.');
           }
@@ -253,9 +259,10 @@ const Dictionary: React.FC<DictionaryProps> = ({ bookTitle = "" }) => {
           <Button 
             onClick={handleClose}
             sx={{
-              color: '#666',
+              color: '#b0b0b0',
               '&:hover': {
-                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                backgroundColor: 'rgba(176, 176, 176, 0.1)',
+                color: '#ffffff',
               },
             }}
           >

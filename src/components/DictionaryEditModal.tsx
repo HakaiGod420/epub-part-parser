@@ -58,9 +58,10 @@ import React, { useState, useEffect } from 'react';
          <Button 
            onClick={handleClose}
            sx={{
-             color: '#666',
+             color: '#b0b0b0',
              '&:hover': {
-               backgroundColor: 'rgba(255, 255, 255, 0.08)',
+               backgroundColor: 'rgba(176, 176, 176, 0.1)',
+               color: '#ffffff',
              },
            }}
          >

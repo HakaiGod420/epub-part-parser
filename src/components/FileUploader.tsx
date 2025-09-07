@@ -104,15 +104,16 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFileUpload }) => {
         </DialogContent>
         <DialogActions>
           <Button 
-            onClick={() => handleDialogClose(false)} 
+            onClick={() => handleDialogClose(false)}
             variant="outlined"
             sx={{
-              color: '#fff',
-              borderColor: '#666',
+              color: '#b0b0b0',
+              borderColor: '#b0b0b0',
               borderRadius: '20px',
               '&:hover': {
-                backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                borderColor: '#888',
+                backgroundColor: 'rgba(176, 176, 176, 0.1)',
+                borderColor: '#ffffff',
+                color: '#ffffff',
               },
             }}
           >

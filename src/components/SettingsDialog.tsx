@@ -28,6 +28,11 @@ import {
   loadTranslationContextSettings, 
   saveTranslationContextSettings 
 } from '../utils/chapterContext';
+import {
+  DictionaryExtractorSettings,
+  DEFAULT_EXTRACTOR_SETTINGS,
+  dictionaryExtractorService
+} from '../utils/dictionaryExtractorService';
 
 interface SettingsDialogProps {
   open: boolean;
@@ -46,7 +51,10 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
     includeChapterTitle: false,
   });
 
+  const [extractorSettings, setExtractorSettings] = useState<DictionaryExtractorSettings>(DEFAULT_EXTRACTOR_SETTINGS);
+
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
+  const [isExtractorOpen, setIsExtractorOpen] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -57,6 +65,9 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
       
       const currentContextSettings = loadTranslationContextSettings();
       setContextSettings(currentContextSettings);
+
+      const currentExtractorSettings = dictionaryExtractorService.getSettings();
+      setExtractorSettings(currentExtractorSettings);
     }
   }, [open]);
 
@@ -68,6 +79,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
 
     translationService.saveSettings(settings);
     saveTranslationContextSettings(contextSettings);
+    dictionaryExtractorService.saveSettings(extractorSettings);
     onClose();
   };
 
@@ -86,6 +98,9 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
     
     const currentContextSettings = loadTranslationContextSettings();
     setContextSettings(currentContextSettings);
+
+    const currentExtractorSettings = dictionaryExtractorService.getSettings();
+    setExtractorSettings(currentExtractorSettings);
     
     onClose();
   };
@@ -212,6 +227,206 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
             </Box>
           </Box>
 
+          {/* Dictionary Term Extractor Settings */}
+          <Accordion 
+            expanded={isExtractorOpen} 
+            onChange={(_, expanded) => setIsExtractorOpen(expanded)}
+            sx={{ backgroundColor: '#3a3a3a' }}
+          >
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography sx={{ color: '#ffffff' }}>Dictionary Term Extractor</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                <Typography variant="body2" sx={{ color: '#b0b0b0' }}>
+                  Configure AI-powered extraction of dictionary terms from translated text
+                </Typography>
+
+                {/* Extractor API Key */}
+                <TextField
+                  label="Gemini API Key for Extractor (Optional)"
+                  type="password"
+                  value={extractorSettings.apiKey}
+                  onChange={(e) => setExtractorSettings(prev => ({ 
+                    ...prev, 
+                    apiKey: e.target.value 
+                  }))}
+                  fullWidth
+                  helperText="Leave empty to use the same API key as translation, or enter a separate key"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      backgroundColor: '#424242',
+                    }
+                  }}
+                />
+
+                {/* Extractor Model Selection */}
+                <FormControl fullWidth>
+                  <InputLabel>Model for Term Extraction</InputLabel>
+                  <Select
+                    value={extractorSettings.model}
+                    label="Model for Term Extraction"
+                    onChange={(e) => setExtractorSettings(prev => ({ 
+                      ...prev, 
+                      model: e.target.value 
+                    }))}
+                    sx={{
+                      backgroundColor: '#424242',
+                    }}
+                  >
+                    {GEMINI_MODELS.map((model) => (
+                      <MenuItem key={model} value={model}>
+                        {model}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                {/* Extraction Categories */}
+                <Box>
+                  <Typography variant="subtitle2" sx={{ color: '#ffffff', mb: 2 }}>
+                    What to Extract:
+                  </Typography>
+                  
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={extractorSettings.extractNames}
+                          onChange={(e) => setExtractorSettings(prev => ({ 
+                            ...prev, 
+                            extractNames: e.target.checked 
+                          }))}
+                          sx={{
+                            '& .MuiSwitch-switchBase.Mui-checked': {
+                              color: '#4caf50',
+                            },
+                            '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                              backgroundColor: '#4caf50',
+                            },
+                          }}
+                        />
+                      }
+                      label="Character Names"
+                    />
+
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={extractorSettings.extractPlaces}
+                          onChange={(e) => setExtractorSettings(prev => ({ 
+                            ...prev, 
+                            extractPlaces: e.target.checked 
+                          }))}
+                          sx={{
+                            '& .MuiSwitch-switchBase.Mui-checked': {
+                              color: '#4caf50',
+                            },
+                            '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                              backgroundColor: '#4caf50',
+                            },
+                          }}
+                        />
+                      }
+                      label="Places & Locations"
+                    />
+
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={extractorSettings.extractTerminology}
+                          onChange={(e) => setExtractorSettings(prev => ({ 
+                            ...prev, 
+                            extractTerminology: e.target.checked 
+                          }))}
+                          sx={{
+                            '& .MuiSwitch-switchBase.Mui-checked': {
+                              color: '#4caf50',
+                            },
+                            '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                              backgroundColor: '#4caf50',
+                            },
+                          }}
+                        />
+                      }
+                      label="Technical Terminology"
+                    />
+
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={extractorSettings.extractCulturalReferences}
+                          onChange={(e) => setExtractorSettings(prev => ({ 
+                            ...prev, 
+                            extractCulturalReferences: e.target.checked 
+                          }))}
+                          sx={{
+                            '& .MuiSwitch-switchBase.Mui-checked': {
+                              color: '#4caf50',
+                            },
+                            '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                              backgroundColor: '#4caf50',
+                            },
+                          }}
+                        />
+                      }
+                      label="Cultural References"
+                    />
+
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={extractorSettings.extractMagicConcepts}
+                          onChange={(e) => setExtractorSettings(prev => ({ 
+                            ...prev, 
+                            extractMagicConcepts: e.target.checked 
+                          }))}
+                          sx={{
+                            '& .MuiSwitch-switchBase.Mui-checked': {
+                              color: '#4caf50',
+                            },
+                            '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                              backgroundColor: '#4caf50',
+                            },
+                          }}
+                        />
+                      }
+                      label="Magic & Fantasy Concepts"
+                    />
+
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={extractorSettings.extractTitlesRanks}
+                          onChange={(e) => setExtractorSettings(prev => ({ 
+                            ...prev, 
+                            extractTitlesRanks: e.target.checked 
+                          }))}
+                          sx={{
+                            '& .MuiSwitch-switchBase.Mui-checked': {
+                              color: '#4caf50',
+                            },
+                            '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                              backgroundColor: '#4caf50',
+                            },
+                          }}
+                        />
+                      }
+                      label="Titles & Ranks"
+                    />
+                  </Box>
+                </Box>
+
+                {/* Info about the extractor */}
+                <Box sx={{ p: 2, backgroundColor: '#2d4a3a', borderRadius: 1, border: '1px solid #4caf50' }}>
+                  <Typography variant="body2" color="#4caf50">
+                    <strong>How it works:</strong> After translating text, click "Extract Terms" to automatically identify and extract important dictionary terms using AI. You can then review and add selected terms to your dictionary.
+                  </Typography>
+                </Box>
+              </Box>
+            </AccordionDetails>
+          </Accordion>
+
           {/* Advanced Settings */}
           <Accordion 
             expanded={isAdvancedOpen} 
@@ -271,9 +486,10 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
         <Button 
           onClick={handleCancel}
           sx={{
-            color: '#666',
+            color: '#b0b0b0',
             '&:hover': {
-              backgroundColor: 'rgba(255, 255, 255, 0.08)',
+              backgroundColor: 'rgba(176, 176, 176, 0.1)',
+              color: '#ffffff',
             },
           }}
         >

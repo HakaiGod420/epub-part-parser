@@ -20,6 +20,7 @@ import CheckIcon from "@mui/icons-material/Check";
 import { encodingForModel} from "js-tiktoken"
 import EditIcon from "@mui/icons-material/Edit";
  import { DictionaryEditModal } from "./DictionaryEditModal";
+ import { dictionaryEventManager } from '../utils/dictionaryEventManager';
 
 interface DictionaryTerm {
   term: string;
@@ -55,28 +56,24 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content, chapterTitle
   useEffect(() => {
     const storedTexts = JSON.parse(localStorage.getItem("optionalTexts") || "[]");
     const storedToggles = JSON.parse(localStorage.getItem("optionalTextToggles") || "[]");
-    const storedDictionary = localStorage.getItem("dictionaryTerms");
 
     setOptionalTexts(Array.isArray(storedTexts) && storedTexts.length ? storedTexts : DEFAULT_TEXTS);
     setOptionalTextToggles(
       Array.isArray(storedToggles) && storedToggles.length ? storedToggles : DEFAULT_TOGGLES
     );
 
-    if (storedDictionary) {
-      try {
-        const parsedDictionary = JSON.parse(storedDictionary);
-        setDictionary(
-          Array.isArray(parsedDictionary)
-            ? parsedDictionary.map((term: any) => ({ 
-                term: term.term, 
-                explanation: term.explanation 
-              }))
-            : []
-        );
-      } catch {
-        console.error("Failed to parse dictionary data.");
-      }
-    }
+    // Load dictionary terms using event manager
+    const loadDictionary = () => {
+      const terms = dictionaryEventManager.getTerms();
+      setDictionary(terms);
+    };
+
+    loadDictionary();
+
+    // Subscribe to dictionary updates
+    const unsubscribe = dictionaryEventManager.subscribe(loadDictionary);
+
+    return unsubscribe;
   }, []);
 
   const handleOptionalTextChanges = (newTexts: string[], newToggles: boolean[]) => {
@@ -101,11 +98,14 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content, chapterTitle
   const saveDictionary = (updatedDictionary: DictionaryTerm[]) => {
     setDictionary(updatedDictionary);
     localStorage.setItem("dictionaryTerms", JSON.stringify(updatedDictionary));
+    dictionaryEventManager.notifyUpdate(); // Notify other components
   };
 
   const addTermToDictionary = (term: string, explanation: string) => {
-    const updatedDictionary = [...dictionary, { term, explanation }];
-    saveDictionary(updatedDictionary);
+    const success = dictionaryEventManager.addTerm({ term, explanation });
+    if (!success) {
+      console.warn(`Term "${term}" already exists in dictionary`);
+    }
   };
 
   const splitContent = async () => {
