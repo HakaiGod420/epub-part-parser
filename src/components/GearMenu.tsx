@@ -3,6 +3,7 @@ import { IconButton, Menu, MenuItem, Dialog, DialogTitle, DialogContent, DialogA
 import SettingsIcon from '@mui/icons-material/Settings';
 import Dictionary from './Dictionary';
 import SettingsDialog from './SettingsDialog';
+import StorageCleanupModal from './StorageCleanupModal';
 
 interface GearMenuProps {
   bookTitle?: string;
@@ -12,6 +13,7 @@ const GearMenu: React.FC<GearMenuProps> = ({ bookTitle = "" }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [dictionaryOpen, setDictionaryOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [storageCleanupOpen, setStorageCleanupOpen] = useState(false);
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -21,9 +23,13 @@ const GearMenu: React.FC<GearMenuProps> = ({ bookTitle = "" }) => {
     setAnchorEl(null);
   };
 
-  const handleDeleteLocalStorage = () => {
-    localStorage.clear();
-    window.location.reload();
+  const handleOpenStorageCleanup = () => {
+    setStorageCleanupOpen(true);
+    handleClose();
+  };
+
+  const handleCloseStorageCleanup = () => {
+    setStorageCleanupOpen(false);
   };
 
   const handleOpenDictionary = () => {
@@ -56,7 +62,7 @@ const GearMenu: React.FC<GearMenuProps> = ({ bookTitle = "" }) => {
       >
         <MenuItem onClick={handleOpenSettings}>Translation Settings</MenuItem>
         <MenuItem onClick={handleOpenDictionary}>Open Dictionary</MenuItem>
-        <MenuItem onClick={handleDeleteLocalStorage}>Delete Local Storage & Restart</MenuItem>
+        <MenuItem onClick={handleOpenStorageCleanup}>Clear Local Storage</MenuItem>
       </Menu>
       <Dialog open={dictionaryOpen} onClose={handleCloseDictionary} fullWidth maxWidth="md">
         <DialogTitle sx={{ color: '#ffffff' }}>Dictionary</DialogTitle>
@@ -70,6 +76,7 @@ const GearMenu: React.FC<GearMenuProps> = ({ bookTitle = "" }) => {
         </DialogActions>
       </Dialog>
       <SettingsDialog open={settingsOpen} onClose={handleCloseSettings} />
+      <StorageCleanupModal open={storageCleanupOpen} onClose={handleCloseStorageCleanup} />
     </>
   );
 };
