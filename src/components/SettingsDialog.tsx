@@ -49,6 +49,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
   const [contextSettings, setContextSettings] = useState<TranslationContextSettings>({
     includeDictionary: true,
     includeChapterTitle: false,
+    enhanceTableFormatting: false,
   });
 
   const [extractorSettings, setExtractorSettings] = useState<DictionaryExtractorSettings>(DEFAULT_EXTRACTOR_SETTINGS);
@@ -220,6 +221,34 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
                     <Typography sx={{ color: '#ffffff' }}>Include Chapter Title</Typography>
                     <Typography variant="body2" sx={{ color: '#b0b0b0' }}>
                       Include the chapter title as context for translation
+                    </Typography>
+                  </Box>
+                }
+              />
+              
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={contextSettings.enhanceTableFormatting}
+                    onChange={(e) => setContextSettings(prev => ({ 
+                      ...prev, 
+                      enhanceTableFormatting: e.target.checked 
+                    }))}
+                    sx={{
+                      '& .MuiSwitch-switchBase.Mui-checked': {
+                        color: '#4caf50',
+                      },
+                      '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                        backgroundColor: '#4caf50',
+                      },
+                    }}
+                  />
+                }
+                label={
+                  <Box>
+                    <Typography sx={{ color: '#ffffff' }}>Enhanced Table & Stats Formatting</Typography>
+                    <Typography variant="body2" sx={{ color: '#b0b0b0' }}>
+                      Enhance formatting for tables, status screens, character stats, and structured information commonly found in game system novels
                     </Typography>
                   </Box>
                 }

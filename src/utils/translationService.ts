@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { loadTranslationContextSettings } from './chapterContext';
 
 export interface TranslationSettings {
   apiKey: string;
@@ -94,6 +95,48 @@ Final Output: The final translated text should contain only the narrative itself
 Final Mandate
 Act as a transparent yet intelligent bridge between the Korean author and the English reader. Prioritize authentic intent over literal translation, ensure the final text is fluent and beautifully written, and format it for a seamless reading experience.`;
 
+export const TABLE_FORMATTING_INSTRUCTION = `
+
+Enhanced Table & Structured Information Formatting
+When encountering structured information such as status screens, character stats, system notifications, inventory lists, skill descriptions, or any tabular data (commonly found in game system novels), apply the following enhanced formatting:
+
+1. **Status Screens & Character Stats**: Format character information, levels, attributes, and stats in clean, organized layouts:
+   - Use consistent spacing and alignment
+   - Group related information logically
+   - Preserve hierarchical structure (main stats, sub-stats, etc.)
+   - Example format:
+     Name: [Character Name]
+     Level: [Number]
+     Class: [Class Name]
+     
+     Attributes:
+     • Strength: [Value]
+     • Agility: [Value]
+     • Intelligence: [Value]
+
+2. **System Notifications & Messages**: Format game system messages, notifications, and prompts clearly:
+   - Use consistent formatting for similar types of messages
+   - Distinguish between different message types (alerts, confirmations, rewards)
+   - Preserve any special formatting that indicates importance
+
+3. **Inventory & Item Lists**: Format item lists, inventories, and equipment clearly:
+   - Use bullet points or numbered lists appropriately
+   - Include item quantities, descriptions, and properties in a readable format
+   - Group similar items when logical
+
+4. **Skill Trees & Abilities**: Format skill descriptions, ability lists, and progression trees:
+   - Use clear headings for skill categories
+   - Include prerequisites, costs, and effects in organized manner
+   - Preserve any branching or hierarchical relationships
+
+5. **Tables & Data**: For any tabular information:
+   - Maintain column alignment where possible
+   - Use consistent spacing between columns
+   - Preserve row and column relationships
+   - Use dividers or spacing to separate sections when needed
+
+The goal is to make structured information as readable and visually organized as possible while maintaining all original information and meaning.`;
+
 export class TranslationService {
   private genAI: GoogleGenerativeAI | null = null;
   private settings: TranslationSettings | null = null;
@@ -130,6 +173,17 @@ export class TranslationService {
     return !!(this.settings?.apiKey && this.settings?.model);
   }
 
+  private buildSystemInstruction(): string {
+    const baseInstruction = this.settings?.systemInstruction || DEFAULT_SYSTEM_INSTRUCTION;
+    const contextSettings = loadTranslationContextSettings();
+    
+    if (contextSettings.enhanceTableFormatting) {
+      return baseInstruction + TABLE_FORMATTING_INSTRUCTION;
+    }
+    
+    return baseInstruction;
+  }
+
   public async translateText(text: string): Promise<string> {
     if (!this.genAI || !this.settings) {
       throw new Error('Translation service not configured. Please set up API key and model in settings.');
@@ -138,7 +192,7 @@ export class TranslationService {
     try {
       const model = this.genAI.getGenerativeModel({ 
         model: this.settings.model,
-        systemInstruction: this.settings.systemInstruction || DEFAULT_SYSTEM_INSTRUCTION
+        systemInstruction: this.buildSystemInstruction()
       });
 
       const result = await model.generateContent(text);
@@ -158,7 +212,7 @@ export class TranslationService {
     try {
       const model = this.genAI.getGenerativeModel({ 
         model: this.settings.model,
-        systemInstruction: this.settings.systemInstruction || DEFAULT_SYSTEM_INSTRUCTION
+        systemInstruction: this.buildSystemInstruction()
       });
 
       const result = await model.generateContentStream(text);

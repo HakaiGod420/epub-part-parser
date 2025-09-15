@@ -16,11 +16,13 @@ export interface ChapterContext {
 export interface TranslationContextSettings {
   includeDictionary: boolean;
   includeChapterTitle: boolean;
+  enhanceTableFormatting: boolean;
 }
 
 const DEFAULT_TRANSLATION_SETTINGS: TranslationContextSettings = {
   includeDictionary: true,
   includeChapterTitle: false,
+  enhanceTableFormatting: false,
 };
 
 /**
