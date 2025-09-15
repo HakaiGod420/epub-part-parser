@@ -43,6 +43,8 @@ import {
   FormatAlignJustify as AlignJustifyIcon,
   AspectRatio as WidthIcon,
   AutoAwesome as ExtractIcon,
+  ArrowBack as ArrowBackIcon,
+  ArrowForward as ArrowForwardIcon,
 } from '@mui/icons-material';
 import { translationService, GEMINI_MODELS } from '../utils/translationService';
 import { dictionaryExtractorService, ExtractedTerm } from '../utils/dictionaryExtractorService';
@@ -54,6 +56,11 @@ interface TranslationModalProps {
   onClose: () => void;
   text: string;
   chapterTitle?: string;
+  // Navigation props
+  onPreviousChapter?: () => void;
+  onNextChapter?: () => void;
+  hasPreviousChapter?: boolean;
+  hasNextChapter?: boolean;
 }
 
 interface ModalSettings {
@@ -170,7 +177,16 @@ const TabPanel = React.memo(({ children, value, index }: any) => (
   </div>
 ));
 
-const TranslationModal: React.FC<TranslationModalProps> = ({ open, onClose, text, chapterTitle }) => {
+const TranslationModal: React.FC<TranslationModalProps> = ({ 
+  open, 
+  onClose, 
+  text, 
+  chapterTitle,
+  onPreviousChapter,
+  onNextChapter,
+  hasPreviousChapter = false,
+  hasNextChapter = false,
+}) => {
   const [translatedText, setTranslatedText] = useState<string>('');
   const [isTranslating, setIsTranslating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -337,6 +353,25 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ open, onClose, text
     return settings.deviceMode === 'mobile' ? mobileFonts : pcFonts;
   }, [settings.deviceMode]);
 
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!open) return;
+      
+      // Arrow key navigation
+      if (event.key === 'ArrowLeft' && hasPreviousChapter && onPreviousChapter) {
+        event.preventDefault();
+        onPreviousChapter();
+      } else if (event.key === 'ArrowRight' && hasNextChapter && onNextChapter) {
+        event.preventDefault();
+        onNextChapter();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [open, hasPreviousChapter, hasNextChapter, onPreviousChapter, onNextChapter]);
+
   const handleClose = () => {
     onClose();
   };
@@ -498,9 +533,47 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ open, onClose, text
             </Typography>
           )}
         </Box>
-        <IconButton onClick={handleClose} sx={{ color: currentTheme.text }}>
-          <CloseIcon />
-        </IconButton>
+        
+        {/* Chapter Navigation */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <IconButton 
+            onClick={onPreviousChapter}
+            disabled={!hasPreviousChapter || !onPreviousChapter}
+            sx={{ 
+              color: currentTheme.text,
+              '&:disabled': {
+                color: currentTheme.border,
+              },
+              '&:hover': {
+                backgroundColor: `${currentTheme.accent}20`,
+              },
+            }}
+            title="Previous Chapter (← key)"
+          >
+            <ArrowBackIcon />
+          </IconButton>
+          
+          <IconButton 
+            onClick={onNextChapter}
+            disabled={!hasNextChapter || !onNextChapter}
+            sx={{ 
+              color: currentTheme.text,
+              '&:disabled': {
+                color: currentTheme.border,
+              },
+              '&:hover': {
+                backgroundColor: `${currentTheme.accent}20`,
+              },
+            }}
+            title="Next Chapter (→ key)"
+          >
+            <ArrowForwardIcon />
+          </IconButton>
+          
+          <IconButton onClick={handleClose} sx={{ color: currentTheme.text, ml: 1 }}>
+            <CloseIcon />
+          </IconButton>
+        </Box>
       </DialogTitle>
 
       <DialogContent sx={{ 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import FileUploader from "./components/FileUploader";
 import ChapterSelector from "./components/ChapterSelector";
 import ChapterContent from "./components/ChapterContent";
@@ -22,6 +22,7 @@ const App: React.FC = () => {
   const [bookTitle, setBookTitle] = useState<string>("");
   const [currentTitle, setCurrentTitle] = useState<string | null | undefined>("");
   const [error, setError] = useState<string | null>(null);
+  const [currentChapterIndex, setCurrentChapterIndex] = useState<number>(-1);
 
   // Expand/Collapse state for each section
   const [fileUploadExpanded, setFileUploadExpanded] = useState<boolean>(true);
@@ -39,24 +40,62 @@ const App: React.FC = () => {
     setBookTitle(extractedTitle); // Extract and set the book title
   };
 
-  const handleSelectChapter = async (href: string) => {
+  const handleSelectChapter = useCallback(async (href: string) => {
     if (book && href) {
       try{
         const content = await getChapterContent(book, href);
         setCurrentTitle(content.title);
         setChapterContent(content.content);
         setImages(content.images);
+        
+        // Update current chapter index
+        const chapterIndex = chapters.findIndex(chapter => chapter.href === href);
+        setCurrentChapterIndex(chapterIndex);
+        
+        // Save selected chapter to localStorage (using same format as ChapterSelector)
+        localStorage.setItem(`${epubName}-selectedChapter`, href);
+        
+        // Update opened chapters list (sync with ChapterSelector)
+        try {
+          const storedChapters = localStorage.getItem(`${epubName}-openedChapters`);
+          const openedChapters = storedChapters ? JSON.parse(storedChapters) : [];
+          if (!openedChapters.includes(href)) {
+            const newOpenedChapters = [...openedChapters, href];
+            localStorage.setItem(`${epubName}-openedChapters`, JSON.stringify(newOpenedChapters));
+          }
+        } catch (err) {
+          console.error("Error updating opened chapters:", err);
+        }
       }
       catch (error){
         console.error("Failed to load chapter content:", error);
         setError("Failed to load chapter content.");
       }
     }
-  };
+  }, [book, chapters, epubName]);
 
   const handleCloseError = () => {
     setError(null);
   }
+
+  // Chapter navigation functions
+  const handlePreviousChapter = () => {
+    if (currentChapterIndex > 0) {
+      const previousChapter = chapters[currentChapterIndex - 1];
+      handleSelectChapter(previousChapter.href);
+    }
+  };
+
+  const handleNextChapter = () => {
+    if (currentChapterIndex < chapters.length - 1) {
+      const nextChapter = chapters[currentChapterIndex + 1];
+      handleSelectChapter(nextChapter.href);
+    }
+  };
+
+  // Check if navigation is available
+  const hasPreviousChapter = currentChapterIndex > 0;
+  const hasNextChapter = currentChapterIndex >= 0 && currentChapterIndex < chapters.length - 1;
 
   // Toggle functions for expand/collapse
   const toggleFileUpload = () => setFileUploadExpanded(!fileUploadExpanded);
@@ -66,13 +105,13 @@ const App: React.FC = () => {
   const toggleTranslation = () => setTranslationExpanded(!translationExpanded);
 
   useEffect(() => {
-    const selectedChapter = localStorage.getItem("selectedChapter");
-    if (selectedChapter && book) {
-      handleSelectChapter(selectedChapter).catch((error) => {
+    const selectedChapter = localStorage.getItem(`${epubName}-selectedChapter`);
+    if (selectedChapter && book && epubName) {
+      handleSelectChapter(selectedChapter).catch((error: any) => {
         console.error("Failed to load chapter content:", error);
       });
     }
-  }, [book]);
+  }, [book, handleSelectChapter, epubName]);
 
   return (
     <Container maxWidth="md" className="container" sx={{ position: 'relative', marginTop: 4 }}>
@@ -223,7 +262,8 @@ const App: React.FC = () => {
               <ChapterSelector 
                 chapters={chapters} 
                 onSelectChapter={handleSelectChapter} 
-                epubName={epubName} 
+                epubName={epubName}
+                selectedChapterIndex={currentChapterIndex}
               />
             </Box>
           </Collapse>
@@ -342,6 +382,10 @@ const App: React.FC = () => {
                   text={stripHtml(chapterContent)} 
                   chapterTitle={currentTitle || undefined}
                   bookTitle={bookTitle}
+                  onPreviousChapter={handlePreviousChapter}
+                  onNextChapter={handleNextChapter}
+                  hasPreviousChapter={hasPreviousChapter}
+                  hasNextChapter={hasNextChapter}
                 />
               </Box>
             </Collapse>

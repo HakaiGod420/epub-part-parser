@@ -14,12 +14,14 @@ interface ChapterSelectorProps {
   chapters: Array<{ label: string; href: string }>;
   onSelectChapter: (href: string) => void;
   epubName: string;
+  selectedChapterIndex?: number; // Optional prop to sync with parent state
 }
 
 const ChapterSelector: React.FC<ChapterSelectorProps> = ({
   chapters,
   onSelectChapter,
   epubName,
+  selectedChapterIndex,
 }) => {
   const [currentChapterIndex, setCurrentChapterIndex] = useState<number>(0);
   const [openedChapters, setOpenedChapters] = useState<string[]>([]);
@@ -47,6 +49,13 @@ const ChapterSelector: React.FC<ChapterSelectorProps> = ({
       setError("Failed to load chapters from storage.");
     }
   }, [chapters, onSelectChapter, epubName]);
+
+  // Sync with parent's selectedChapterIndex when it changes
+  useEffect(() => {
+    if (selectedChapterIndex !== undefined && selectedChapterIndex !== currentChapterIndex) {
+      setCurrentChapterIndex(selectedChapterIndex);
+    }
+  }, [selectedChapterIndex, currentChapterIndex]);
 
   const saveToLocalStorage = (index: number) => {
     try {

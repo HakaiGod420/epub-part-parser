@@ -18,9 +18,22 @@ interface TranslationComponentProps {
   text: string;
   chapterTitle?: string;
   bookTitle?: string;
+  // Navigation props
+  onPreviousChapter?: () => void;
+  onNextChapter?: () => void;
+  hasPreviousChapter?: boolean;
+  hasNextChapter?: boolean;
 }
 
-const TranslationComponent: React.FC<TranslationComponentProps> = ({ text, chapterTitle, bookTitle }) => {
+const TranslationComponent: React.FC<TranslationComponentProps> = ({ 
+  text, 
+  chapterTitle, 
+  bookTitle,
+  onPreviousChapter,
+  onNextChapter,
+  hasPreviousChapter,
+  hasNextChapter,
+}) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [chapterContext, setChapterContext] = useState<Partial<ChapterContext>>({});
   const [contextualText, setContextualText] = useState<string>('');
@@ -153,10 +166,15 @@ const TranslationComponent: React.FC<TranslationComponentProps> = ({ text, chapt
 
       {/* Translation Modal */}
       <TranslationModal
+        key={`${chapterTitle}-${text.substring(0, 100)}`} // Force re-render when chapter changes
         open={modalOpen}
         onClose={handleCloseModal}
         text={contextualText}
         chapterTitle={chapterTitle}
+        onPreviousChapter={onPreviousChapter}
+        onNextChapter={onNextChapter}
+        hasPreviousChapter={hasPreviousChapter}
+        hasNextChapter={hasNextChapter}
       />
     </Box>
   );
