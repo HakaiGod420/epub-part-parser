@@ -11,6 +11,7 @@ export interface ChapterContext {
   bookTitle?: string;
   includeDictionary: boolean;
   includeChapterTitle: boolean;
+  enhanceTableFormatting: boolean;
 }
 
 export interface TranslationContextSettings {
@@ -123,6 +124,7 @@ export function loadChapterContextFromStorage(): Partial<ChapterContext> {
         : DEFAULT_TOGGLES,
       includeDictionary: translationSettings.includeDictionary,
       includeChapterTitle: translationSettings.includeChapterTitle,
+      enhanceTableFormatting: translationSettings.enhanceTableFormatting,
     };
   } catch (error) {
     console.error("Error loading chapter context:", error);

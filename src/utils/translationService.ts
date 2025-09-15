@@ -1,10 +1,18 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { loadTranslationContextSettings } from './chapterContext';
 
+export interface AIConfig {
+  topP?: number;
+  temperature?: number;
+  thinkingBudget?: number;
+  maxOutputTokens?: number;
+}
+
 export interface TranslationSettings {
   apiKey: string;
   model: string;
   systemInstruction: string;
+  aiConfig: AIConfig;
 }
 
 export const GEMINI_MODELS = [
@@ -16,6 +24,13 @@ export const GEMINI_MODELS = [
   'gemini-2.5-flash-live',
   'gemini-2.0-flash-live'
 ];
+
+export const DEFAULT_AI_CONFIG: AIConfig = {
+  topP: 0.95,
+  temperature: 1.0,
+  thinkingBudget: -1,
+  maxOutputTokens: 8192,
+};
 
 export const DEFAULT_SYSTEM_INSTRUCTION = `Core Objective
 Your primary function is to translate Korean fictional narratives (web novels, short stories, etc.) into masterful English. The final output should be so fluid and natural that it reads as if it were originally crafted in English, while remaining deeply faithful to the author's original voice, style, and intent.
@@ -149,7 +164,12 @@ export class TranslationService {
     const storedSettings = localStorage.getItem('translationSettings');
     if (storedSettings) {
       try {
-        this.settings = JSON.parse(storedSettings);
+        const parsedSettings = JSON.parse(storedSettings);
+        // Ensure aiConfig exists with defaults
+        this.settings = {
+          ...parsedSettings,
+          aiConfig: { ...DEFAULT_AI_CONFIG, ...(parsedSettings.aiConfig || {}) }
+        };
         if (this.settings?.apiKey) {
           this.genAI = new GoogleGenerativeAI(this.settings.apiKey);
         }
@@ -160,8 +180,14 @@ export class TranslationService {
   }
 
   public saveSettings(settings: TranslationSettings): void {
-    this.settings = settings;
-    localStorage.setItem('translationSettings', JSON.stringify(settings));
+    // Ensure aiConfig has all required properties with defaults
+    const settingsWithDefaults = {
+      ...settings,
+      aiConfig: { ...DEFAULT_AI_CONFIG, ...settings.aiConfig }
+    };
+    
+    this.settings = settingsWithDefaults;
+    localStorage.setItem('translationSettings', JSON.stringify(settingsWithDefaults));
     this.genAI = new GoogleGenerativeAI(settings.apiKey);
   }
 
@@ -190,11 +216,27 @@ export class TranslationService {
     }
 
     try {
-      const model = this.genAI.getGenerativeModel({ 
+      const aiConfig = this.settings.aiConfig || DEFAULT_AI_CONFIG;
+      const generationConfig: any = {};
+      
+      if (aiConfig.topP !== undefined) generationConfig.topP = aiConfig.topP;
+      if (aiConfig.temperature !== undefined) generationConfig.temperature = aiConfig.temperature;
+      if (aiConfig.maxOutputTokens !== undefined) generationConfig.maxOutputTokens = aiConfig.maxOutputTokens;
+      
+      const modelConfig: any = {
         model: this.settings.model,
-        systemInstruction: this.buildSystemInstruction()
-      });
+        systemInstruction: this.buildSystemInstruction(),
+        generationConfig
+      };
 
+      // Add thinking config if thinkingBudget is set
+      if (aiConfig.thinkingBudget !== undefined && aiConfig.thinkingBudget !== -1) {
+        modelConfig.thinkingConfig = {
+          thinkingBudget: aiConfig.thinkingBudget
+        };
+      }
+
+      const model = this.genAI.getGenerativeModel(modelConfig);
       const result = await model.generateContent(text);
       const response = await result.response;
       return response.text();
@@ -210,11 +252,27 @@ export class TranslationService {
     }
 
     try {
-      const model = this.genAI.getGenerativeModel({ 
+      const aiConfig = this.settings.aiConfig || DEFAULT_AI_CONFIG;
+      const generationConfig: any = {};
+      
+      if (aiConfig.topP !== undefined) generationConfig.topP = aiConfig.topP;
+      if (aiConfig.temperature !== undefined) generationConfig.temperature = aiConfig.temperature;
+      if (aiConfig.maxOutputTokens !== undefined) generationConfig.maxOutputTokens = aiConfig.maxOutputTokens;
+      
+      const modelConfig: any = {
         model: this.settings.model,
-        systemInstruction: this.buildSystemInstruction()
-      });
+        systemInstruction: this.buildSystemInstruction(),
+        generationConfig
+      };
 
+      // Add thinking config if thinkingBudget is set
+      if (aiConfig.thinkingBudget !== undefined && aiConfig.thinkingBudget !== -1) {
+        modelConfig.thinkingConfig = {
+          thinkingBudget: aiConfig.thinkingBudget
+        };
+      }
+
+      const model = this.genAI.getGenerativeModel(modelConfig);
       const result = await model.generateContentStream(text);
       
       for await (const chunk of result.stream) {

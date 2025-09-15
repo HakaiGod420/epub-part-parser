@@ -22,7 +22,7 @@ import {
   ExpandMore as ExpandMoreIcon,
   Settings as SettingsIcon,
 } from '@mui/icons-material';
-import { TranslationSettings, GEMINI_MODELS, DEFAULT_SYSTEM_INSTRUCTION, translationService } from '../utils/translationService';
+import { TranslationSettings, GEMINI_MODELS, DEFAULT_SYSTEM_INSTRUCTION, DEFAULT_AI_CONFIG, translationService } from '../utils/translationService';
 import { 
   TranslationContextSettings, 
   loadTranslationContextSettings, 
@@ -44,6 +44,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
     apiKey: '',
     model: 'gemini-2.5-pro',
     systemInstruction: DEFAULT_SYSTEM_INSTRUCTION,
+    aiConfig: DEFAULT_AI_CONFIG,
   });
 
   const [contextSettings, setContextSettings] = useState<TranslationContextSettings>({
@@ -94,6 +95,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
         apiKey: '',
         model: 'gemini-2.5-pro',
         systemInstruction: DEFAULT_SYSTEM_INSTRUCTION,
+        aiConfig: DEFAULT_AI_CONFIG,
       });
     }
     
@@ -159,6 +161,94 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
               ))}
             </Select>
           </FormControl>
+
+          {/* AI Configuration Settings */}
+          <Box sx={{ border: '1px solid #444', borderRadius: 1, p: 2, backgroundColor: '#333' }}>
+            <Typography variant="h6" sx={{ color: '#4caf50', mb: 2 }}>
+              AI Configuration
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#b0b0b0', mb: 2 }}>
+              Fine-tune AI model parameters for translation quality and behavior
+            </Typography>
+            
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {/* Top P */}
+              <TextField
+                label="Top P"
+                type="number"
+                value={settings.aiConfig.topP}
+                onChange={(e) => setSettings(prev => ({ 
+                  ...prev, 
+                  aiConfig: { ...prev.aiConfig, topP: parseFloat(e.target.value) || 0.95 }
+                }))}
+                inputProps={{ min: 0.1, max: 1.0, step: 0.01 }}
+                fullWidth
+                helperText="Controls diversity of responses (0.1-1.0). Lower = more focused, Higher = more creative"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: '#424242',
+                  }
+                }}
+              />
+
+              {/* Temperature */}
+              <TextField
+                label="Temperature"
+                type="number"
+                value={settings.aiConfig.temperature}
+                onChange={(e) => setSettings(prev => ({ 
+                  ...prev, 
+                  aiConfig: { ...prev.aiConfig, temperature: parseFloat(e.target.value) || 1.0 }
+                }))}
+                inputProps={{ min: 0.0, max: 2.0, step: 0.1 }}
+                fullWidth
+                helperText="Controls randomness (0.0-2.0). Lower = more consistent, Higher = more varied"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: '#424242',
+                  }
+                }}
+              />
+
+              {/* Thinking Budget */}
+              <TextField
+                label="Thinking Budget"
+                type="number"
+                value={settings.aiConfig.thinkingBudget}
+                onChange={(e) => setSettings(prev => ({ 
+                  ...prev, 
+                  aiConfig: { ...prev.aiConfig, thinkingBudget: parseInt(e.target.value) || -1 }
+                }))}
+                inputProps={{ min: -1, max: 100000, step: 1000 }}
+                fullWidth
+                helperText="Max thinking tokens (-1 for unlimited). Higher allows more complex reasoning"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: '#424242',
+                  }
+                }}
+              />
+
+              {/* Max Output Tokens */}
+              <TextField
+                label="Max Output Tokens"
+                type="number"
+                value={settings.aiConfig.maxOutputTokens}
+                onChange={(e) => setSettings(prev => ({ 
+                  ...prev, 
+                  aiConfig: { ...prev.aiConfig, maxOutputTokens: parseInt(e.target.value) || 8192 }
+                }))}
+                inputProps={{ min: 1, max: 32768, step: 256 }}
+                fullWidth
+                helperText="Maximum length of translation output (1-32768 tokens)"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: '#424242',
+                  }
+                }}
+              />
+            </Box>
+          </Box>
 
           {/* Translation Context Settings */}
           <Box sx={{ border: '1px solid #444', borderRadius: 1, p: 2, backgroundColor: '#333' }}>
