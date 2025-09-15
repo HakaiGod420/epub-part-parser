@@ -44,7 +44,7 @@ import {
   AspectRatio as WidthIcon,
   AutoAwesome as ExtractIcon,
 } from '@mui/icons-material';
-import { translationService } from '../utils/translationService';
+import { translationService, GEMINI_MODELS } from '../utils/translationService';
 import { dictionaryExtractorService, ExtractedTerm } from '../utils/dictionaryExtractorService';
 import { dictionaryEventManager } from '../utils/dictionaryEventManager';
 import TermsExtractionPopup from './TermsExtractionPopup';
@@ -64,30 +64,77 @@ interface ModalSettings {
   textAlign: 'left' | 'center' | 'justify';
   maxWidth: number;
   showOriginalText: boolean;
+  deviceMode: 'mobile' | 'pc';
 }
 
 const defaultModalSettings: ModalSettings = {
   fontSize: 16,
-  fontFamily: 'Georgia',
+  fontFamily: 'Roboto, sans-serif',
   lineHeight: 1.6,
   theme: 'dark',
   textAlign: 'justify',
   maxWidth: 800,
   showOriginalText: false,
+  deviceMode: 'mobile',
 };
 
-const fontFamilies = [
-  'Georgia',
-  'Times New Roman',
-  'Arial',
-  'Helvetica',
-  'Verdana',
-  'Roboto',
-  'Open Sans',
-  'Lato',
-  'Merriweather',
-  'Source Sans Pro',
+const mobileFonts = [
+  'Roboto, sans-serif',
+  'Noto Sans, sans-serif', 
+  'Droid Sans, sans-serif',
+  'system-ui, -apple-system, sans-serif',
+  'Arial, Helvetica, sans-serif',
+  'Noto Serif, serif',
+  'Droid Serif, serif', 
+  'ui-serif, Georgia, serif',
+  'Droid Sans Mono, Consolas, monospace',
+  'Roboto Mono, Courier New, monospace',
+  'ui-monospace, Consolas, monospace',
 ];
+
+const pcFonts = [
+  'Georgia, Times, serif',
+  'Times New Roman, Times, serif',
+  'Arial, Helvetica, sans-serif',
+  'Helvetica, Arial, sans-serif',
+  'Verdana, Geneva, sans-serif',
+  'Calibri, sans-serif',
+  'Segoe UI, Tahoma, Geneva, sans-serif',
+  'Trebuchet MS, sans-serif',
+  'Book Antiqua, Palatino, serif',
+  'Garamond, serif',
+  'Courier New, Courier, monospace',
+  'Consolas, Monaco, monospace',
+  'Lucida Console, monospace',
+];
+
+const fontDisplayNames: { [key: string]: string } = {
+  // Mobile fonts
+  'Roboto, sans-serif': 'Roboto',
+  'Noto Sans, sans-serif': 'Noto Sans',
+  'Droid Sans, sans-serif': 'Droid Sans',
+  'system-ui, -apple-system, sans-serif': 'System UI',
+  'Arial, Helvetica, sans-serif': 'Arial',
+  'Noto Serif, serif': 'Noto Serif',
+  'Droid Serif, serif': 'Droid Serif', 
+  'ui-serif, Georgia, serif': 'System Serif',
+  'Droid Sans Mono, Consolas, monospace': 'Droid Sans Mono',
+  'Roboto Mono, Courier New, monospace': 'Roboto Mono',
+  'ui-monospace, Consolas, monospace': 'System Monospace',
+  // PC fonts
+  'Georgia, Times, serif': 'Georgia',
+  'Times New Roman, Times, serif': 'Times New Roman',
+  'Helvetica, Arial, sans-serif': 'Helvetica',
+  'Verdana, Geneva, sans-serif': 'Verdana',
+  'Calibri, sans-serif': 'Calibri',
+  'Segoe UI, Tahoma, Geneva, sans-serif': 'Segoe UI',
+  'Trebuchet MS, sans-serif': 'Trebuchet MS',
+  'Book Antiqua, Palatino, serif': 'Book Antiqua',
+  'Garamond, serif': 'Garamond',
+  'Courier New, Courier, monospace': 'Courier New',
+  'Consolas, Monaco, monospace': 'Consolas',
+  'Lucida Console, monospace': 'Lucida Console',
+};
 
 const themes = {
   dark: {
@@ -130,6 +177,7 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ open, onClose, text
   const [copied, setCopied] = useState(false);
   const [currentTab, setCurrentTab] = useState(0);
   const [settings, setSettings] = useState<ModalSettings>(defaultModalSettings);
+  const [currentModel, setCurrentModel] = useState<string>('');
   
   // Dictionary extractor state
   const [isExtracting, setIsExtracting] = useState(false);
@@ -217,6 +265,12 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ open, onClose, text
       setIsTranslating(false);
       setCopied(false);
       setCurrentTab(0);
+      
+      // Load current model from translation service
+      const currentSettings = translationService.getSettings();
+      if (currentSettings?.model) {
+        setCurrentModel(currentSettings.model);
+      }
     }
   }, [open]);
 
@@ -261,6 +315,27 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ open, onClose, text
       console.error('Failed to copy text:', err);
     }
   };
+
+  const handleModelChange = useCallback((event: any) => {
+    const newModel = event.target.value;
+    setCurrentModel(newModel);
+    
+    // Update the translation service settings with the new model
+    const currentSettings = translationService.getSettings();
+    if (currentSettings) {
+      const updatedSettings = { ...currentSettings, model: newModel };
+      translationService.saveSettings(updatedSettings);
+    }
+  }, []);
+
+  const handleDeviceModeChange = useCallback((event: any) => {
+    setSettings(prev => ({ ...prev, deviceMode: event.target.value }));
+  }, []);
+
+  // Get current font list based on device mode
+  const getCurrentFonts = useCallback(() => {
+    return settings.deviceMode === 'mobile' ? mobileFonts : pcFonts;
+  }, [settings.deviceMode]);
 
   const handleClose = () => {
     onClose();
@@ -679,6 +754,146 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ open, onClose, text
           {/* Settings Content */}
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, maxWidth: 800, mx: 'auto' }}>
             
+            {/* Translation Model Settings */}
+            <Paper sx={paperStyles}>
+              <Typography variant="h6" sx={{ mb: 3, color: currentTheme.accent, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <TranslateIcon /> Translation Model
+              </Typography>
+              
+              <List disablePadding>
+                <ListItem sx={{ px: 0, py: 2 }}>
+                  <ListItemIcon sx={{ minWidth: 40 }}>
+                    <TranslateIcon sx={{ color: currentTheme.accent }} />
+                  </ListItemIcon>
+                  <ListItemText 
+                    primary="Gemini Model"
+                    secondary="Select the AI model for translation"
+                    primaryTypographyProps={{ color: currentTheme.text }}
+                    secondaryTypographyProps={{ color: currentTheme.secondary }}
+                    sx={{ flexGrow: 1 }}
+                  />
+                  <FormControl sx={{ width: 250, ml: 2 }}>
+                    <Select
+                      value={currentModel}
+                      onChange={handleModelChange}
+                      displayEmpty
+                      size="small"
+                      sx={{
+                        color: currentTheme.text,
+                        backgroundColor: currentTheme.background,
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: currentTheme.border,
+                        },
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: currentTheme.accent,
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: currentTheme.accent,
+                        },
+                        '& .MuiSelect-icon': {
+                          color: currentTheme.text,
+                        },
+                      }}
+                      MenuProps={{
+                        PaperProps: {
+                          sx: {
+                            backgroundColor: currentTheme.paper,
+                            color: currentTheme.text,
+                            border: `1px solid ${currentTheme.border}`,
+                            maxHeight: 300,
+                            '& .MuiMenuItem-root': {
+                              color: currentTheme.text,
+                              '&:hover': {
+                                backgroundColor: `${currentTheme.accent}30`,
+                              },
+                              '&.Mui-selected': {
+                                backgroundColor: `${currentTheme.accent}40`,
+                                '&:hover': {
+                                  backgroundColor: `${currentTheme.accent}50`,
+                                },
+                              },
+                            },
+                          },
+                        },
+                      }}
+                    >
+                      <MenuItem value="" disabled sx={{ color: currentTheme.secondary }}>
+                        Select Model
+                      </MenuItem>
+                      {GEMINI_MODELS.map((model) => (
+                        <MenuItem key={model} value={model}>
+                          {model}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </ListItem>
+              </List>
+            </Paper>
+
+            {/* Device Mode Settings */}
+            <Paper sx={paperStyles}>
+              <Typography variant="h6" sx={{ mb: 3, color: currentTheme.accent, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <TextFieldsIcon /> Device Mode
+              </Typography>
+              
+              <List disablePadding>
+                <ListItem sx={{ px: 0, py: 2 }}>
+                  <ListItemIcon sx={{ minWidth: 40 }}>
+                    <TextFieldsIcon sx={{ color: currentTheme.accent }} />
+                  </ListItemIcon>
+                  <ListItemText 
+                    primary="Font Optimization"
+                    secondary="Choose font set optimized for your device"
+                    primaryTypographyProps={{ color: currentTheme.text }}
+                    secondaryTypographyProps={{ color: currentTheme.secondary }}
+                    sx={{ flexGrow: 1 }}
+                  />
+                  <FormControl sx={{ width: 250, ml: 2 }}>
+                    <RadioGroup
+                      value={settings.deviceMode}
+                      onChange={handleDeviceModeChange}
+                      row
+                      sx={{ gap: 2 }}
+                    >
+                      <FormControlLabel
+                        value="mobile"
+                        control={
+                          <Radio 
+                            sx={{ 
+                              color: currentTheme.secondary,
+                              '&.Mui-checked': { color: currentTheme.accent }
+                            }} 
+                          />
+                        }
+                        label={
+                          <Typography sx={{ color: currentTheme.text, fontSize: '0.875rem' }}>
+                            Mobile/Tablet
+                          </Typography>
+                        }
+                      />
+                      <FormControlLabel
+                        value="pc"
+                        control={
+                          <Radio 
+                            sx={{ 
+                              color: currentTheme.secondary,
+                              '&.Mui-checked': { color: currentTheme.accent }
+                            }} 
+                          />
+                        }
+                        label={
+                          <Typography sx={{ color: currentTheme.text, fontSize: '0.875rem' }}>
+                            PC/Desktop
+                          </Typography>
+                        }
+                      />
+                    </RadioGroup>
+                  </FormControl>
+                </ListItem>
+              </List>
+            </Paper>
+            
             {/* Typography Settings */}
             <Paper sx={paperStyles}>
               <Typography variant="h6" sx={{ mb: 3, color: currentTheme.accent, display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -780,9 +995,9 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ open, onClose, text
                         },
                       }}
                     >
-                      {fontFamilies.map((font) => (
+                      {getCurrentFonts().map((font) => (
                         <MenuItem key={font} value={font} sx={{ fontFamily: font }}>
-                          {font}
+                          {fontDisplayNames[font] || font}
                         </MenuItem>
                       ))}
                     </Select>
