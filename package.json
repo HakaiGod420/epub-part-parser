@@ -8,6 +8,7 @@
     "@google/generative-ai": "^0.24.1",
     "@mui/icons-material": "^6.2.0",
     "@mui/material": "^6.2.0",
+    "axios": "^1.12.2",
     "cra-template-typescript": "1.2.0",
     "epubjs": "^0.3.93",
     "js-tiktoken": "^1.0.16",

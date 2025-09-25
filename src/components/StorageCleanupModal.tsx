@@ -42,8 +42,18 @@ const STORAGE_DEFINITIONS: StorageItem[] = [
   },
   {
     key: 'translationSettings',
-    label: 'Translation Settings',
-    description: 'Translation service settings (API key, model, system instructions)'
+    label: 'Translation Settings (Legacy)',
+    description: 'Legacy translation service settings (automatically migrated to new format)'
+  },
+  {
+    key: 'translationProviderSettings',
+    label: 'Translation Provider Settings',
+    description: 'Modern translation settings supporting multiple providers (Google, OpenRouter)'
+  },
+  {
+    key: 'openRouterSettings',
+    label: 'OpenRouter Settings',
+    description: 'OpenRouter API settings (API key, model selection, base URL)'
   },
   {
     key: 'translationContextSettings',

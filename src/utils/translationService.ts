@@ -1,5 +1,8 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { loadTranslationContextSettings } from './chapterContext';
+import { openRouterService, OpenRouterSettings } from './openRouterService';
+
+export type TranslationProvider = 'google' | 'openrouter';
 
 export interface AIConfig {
   topP?: number;
@@ -9,10 +12,17 @@ export interface AIConfig {
 }
 
 export interface TranslationSettings {
+  provider: TranslationProvider;
   apiKey: string;
   model: string;
   systemInstruction: string;
   aiConfig: AIConfig;
+}
+
+export interface TranslationProviderSettings {
+  currentProvider: TranslationProvider;
+  googleSettings: TranslationSettings;
+  openRouterSettings: OpenRouterSettings;
 }
 
 export const GEMINI_MODELS = [
@@ -155,27 +165,73 @@ The goal is to make structured information as readable and visually organized as
 export class TranslationService {
   private genAI: GoogleGenerativeAI | null = null;
   private settings: TranslationSettings | null = null;
+  private providerSettings: TranslationProviderSettings | null = null;
 
   constructor() {
     this.loadSettings();
   }
 
   private loadSettings(): void {
+    // Load legacy settings first for backward compatibility
     const storedSettings = localStorage.getItem('translationSettings');
-    if (storedSettings) {
+    const providerSettings = localStorage.getItem('translationProviderSettings');
+    
+    if (providerSettings) {
+      try {
+        this.providerSettings = JSON.parse(providerSettings);
+        this.updateCurrentSettings();
+      } catch (error) {
+        console.error('Failed to load provider settings:', error);
+      }
+    } else if (storedSettings) {
+      // Migrate legacy settings
       try {
         const parsedSettings = JSON.parse(storedSettings);
-        // Ensure aiConfig exists with defaults
-        this.settings = {
+        const googleSettings = {
+          provider: 'google' as TranslationProvider,
           ...parsedSettings,
           aiConfig: { ...DEFAULT_AI_CONFIG, ...(parsedSettings.aiConfig || {}) }
         };
-        if (this.settings?.apiKey) {
-          this.genAI = new GoogleGenerativeAI(this.settings.apiKey);
-        }
+        
+        this.providerSettings = {
+          currentProvider: 'google',
+          googleSettings,
+          openRouterSettings: {
+            apiKey: '',
+            model: '',
+            baseUrl: 'https://openrouter.ai/api/v1',
+            siteUrl: 'https://epub-parser.local',
+            siteName: 'EPUB Parser'
+          }
+        };
+        
+        this.saveProviderSettings(this.providerSettings);
+        this.updateCurrentSettings();
       } catch (error) {
-        console.error('Failed to load translation settings:', error);
+        console.error('Failed to migrate legacy settings:', error);
       }
+    }
+  }
+
+  private updateCurrentSettings(): void {
+    if (!this.providerSettings) return;
+    
+    if (this.providerSettings.currentProvider === 'google') {
+      this.settings = this.providerSettings.googleSettings;
+      if (this.settings?.apiKey) {
+        this.genAI = new GoogleGenerativeAI(this.settings.apiKey);
+      }
+    } else if (this.providerSettings.currentProvider === 'openrouter') {
+      // Convert OpenRouter settings to TranslationSettings format for compatibility
+      const orSettings = this.providerSettings.openRouterSettings;
+      this.settings = {
+        provider: 'openrouter',
+        apiKey: orSettings.apiKey,
+        model: orSettings.model,
+        systemInstruction: DEFAULT_SYSTEM_INSTRUCTION,
+        aiConfig: DEFAULT_AI_CONFIG
+      };
+      openRouterService.saveSettings(orSettings);
     }
   }
 
@@ -186,17 +242,73 @@ export class TranslationService {
       aiConfig: { ...DEFAULT_AI_CONFIG, ...settings.aiConfig }
     };
     
+    if (!this.providerSettings) {
+      this.providerSettings = {
+        currentProvider: settings.provider || 'google',
+        googleSettings: settingsWithDefaults,
+        openRouterSettings: {
+          apiKey: '',
+          model: '',
+          baseUrl: 'https://openrouter.ai/api/v1',
+          siteUrl: 'https://epub-parser.local',
+          siteName: 'EPUB Parser'
+        }
+      };
+    }
+
+    if (settings.provider === 'google') {
+      this.providerSettings.googleSettings = settingsWithDefaults;
+      this.genAI = new GoogleGenerativeAI(settings.apiKey);
+    } else if (settings.provider === 'openrouter') {
+      // Update OpenRouter settings
+      const orSettings = {
+        apiKey: settings.apiKey,
+        model: settings.model,
+        baseUrl: 'https://openrouter.ai/api/v1',
+        siteUrl: 'https://epub-parser.local',
+        siteName: 'EPUB Parser'
+      };
+      this.providerSettings.openRouterSettings = orSettings;
+      openRouterService.saveSettings(orSettings);
+    }
+
+    this.providerSettings.currentProvider = settings.provider || 'google';
     this.settings = settingsWithDefaults;
-    localStorage.setItem('translationSettings', JSON.stringify(settingsWithDefaults));
-    this.genAI = new GoogleGenerativeAI(settings.apiKey);
+    this.saveProviderSettings(this.providerSettings);
+  }
+
+  private saveProviderSettings(settings: TranslationProviderSettings): void {
+    localStorage.setItem('translationProviderSettings', JSON.stringify(settings));
   }
 
   public getSettings(): TranslationSettings | null {
     return this.settings;
   }
 
+  public getProviderSettings(): TranslationProviderSettings | null {
+    return this.providerSettings;
+  }
+
+  public getCurrentProvider(): TranslationProvider {
+    return this.providerSettings?.currentProvider || 'google';
+  }
+
+  public switchProvider(provider: TranslationProvider): void {
+    if (!this.providerSettings) return;
+    
+    this.providerSettings.currentProvider = provider;
+    this.saveProviderSettings(this.providerSettings);
+    this.updateCurrentSettings();
+  }
+
   public isConfigured(): boolean {
-    return !!(this.settings?.apiKey && this.settings?.model);
+    const provider = this.getCurrentProvider();
+    if (provider === 'google') {
+      return !!(this.settings?.apiKey && this.settings?.model);
+    } else if (provider === 'openrouter') {
+      return openRouterService.isConfigured();
+    }
+    return false;
   }
 
   private buildSystemInstruction(): string {
@@ -211,79 +323,105 @@ export class TranslationService {
   }
 
   public async translateText(text: string): Promise<string> {
-    if (!this.genAI || !this.settings) {
-      throw new Error('Translation service not configured. Please set up API key and model in settings.');
-    }
-
-    try {
-      const aiConfig = this.settings.aiConfig || DEFAULT_AI_CONFIG;
-      const generationConfig: any = {};
-      
-      if (aiConfig.topP !== undefined) generationConfig.topP = aiConfig.topP;
-      if (aiConfig.temperature !== undefined) generationConfig.temperature = aiConfig.temperature;
-      if (aiConfig.maxOutputTokens !== undefined) generationConfig.maxOutputTokens = aiConfig.maxOutputTokens;
-      
-      const modelConfig: any = {
-        model: this.settings.model,
-        systemInstruction: this.buildSystemInstruction(),
-        generationConfig
-      };
-
-      // Add thinking config if thinkingBudget is set
-      if (aiConfig.thinkingBudget !== undefined && aiConfig.thinkingBudget !== -1) {
-        modelConfig.thinkingConfig = {
-          thinkingBudget: aiConfig.thinkingBudget
-        };
+    const provider = this.getCurrentProvider();
+    
+    if (provider === 'google') {
+      if (!this.genAI || !this.settings) {
+        throw new Error('Google translation service not configured. Please set up API key and model in settings.');
       }
 
-      const model = this.genAI.getGenerativeModel(modelConfig);
-      const result = await model.generateContent(text);
-      const response = await result.response;
-      return response.text();
-    } catch (error) {
-      console.error('Translation error:', error);
-      throw new Error(`Translation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      try {
+        const aiConfig = this.settings.aiConfig || DEFAULT_AI_CONFIG;
+        const generationConfig: any = {};
+        
+        if (aiConfig.topP !== undefined) generationConfig.topP = aiConfig.topP;
+        if (aiConfig.temperature !== undefined) generationConfig.temperature = aiConfig.temperature;
+        if (aiConfig.maxOutputTokens !== undefined) generationConfig.maxOutputTokens = aiConfig.maxOutputTokens;
+        
+        const modelConfig: any = {
+          model: this.settings.model,
+          systemInstruction: this.buildSystemInstruction(),
+          generationConfig
+        };
+
+        // Add thinking config if thinkingBudget is set
+        if (aiConfig.thinkingBudget !== undefined && aiConfig.thinkingBudget !== -1) {
+          modelConfig.thinkingConfig = {
+            thinkingBudget: aiConfig.thinkingBudget
+          };
+        }
+
+        const model = this.genAI.getGenerativeModel(modelConfig);
+        const result = await model.generateContent(text);
+        const response = await result.response;
+        return response.text();
+      } catch (error) {
+        console.error('Google translation error:', error);
+        throw new Error(`Google translation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    } else if (provider === 'openrouter') {
+      try {
+        return await openRouterService.translateText(text, this.buildSystemInstruction());
+      } catch (error) {
+        console.error('OpenRouter translation error:', error);
+        throw error;
+      }
+    } else {
+      throw new Error('Translation service not configured. Please set up API key and model in settings.');
     }
   }
 
   public async translateTextStream(text: string, onChunk: (chunk: string) => void): Promise<void> {
-    if (!this.genAI || !this.settings) {
-      throw new Error('Translation service not configured. Please set up API key and model in settings.');
-    }
+    const provider = this.getCurrentProvider();
+    
+    if (provider === 'google') {
+      if (!this.genAI || !this.settings) {
+        throw new Error('Google translation service not configured. Please set up API key and model in settings.');
+      }
 
-    try {
-      const aiConfig = this.settings.aiConfig || DEFAULT_AI_CONFIG;
-      const generationConfig: any = {};
-      
-      if (aiConfig.topP !== undefined) generationConfig.topP = aiConfig.topP;
-      if (aiConfig.temperature !== undefined) generationConfig.temperature = aiConfig.temperature;
-      if (aiConfig.maxOutputTokens !== undefined) generationConfig.maxOutputTokens = aiConfig.maxOutputTokens;
-      
-      const modelConfig: any = {
-        model: this.settings.model,
-        systemInstruction: this.buildSystemInstruction(),
-        generationConfig
-      };
-
-      // Add thinking config if thinkingBudget is set
-      if (aiConfig.thinkingBudget !== undefined && aiConfig.thinkingBudget !== -1) {
-        modelConfig.thinkingConfig = {
-          thinkingBudget: aiConfig.thinkingBudget
+      try {
+        const aiConfig = this.settings.aiConfig || DEFAULT_AI_CONFIG;
+        const generationConfig: any = {};
+        
+        if (aiConfig.topP !== undefined) generationConfig.topP = aiConfig.topP;
+        if (aiConfig.temperature !== undefined) generationConfig.temperature = aiConfig.temperature;
+        if (aiConfig.maxOutputTokens !== undefined) generationConfig.maxOutputTokens = aiConfig.maxOutputTokens;
+        
+        const modelConfig: any = {
+          model: this.settings.model,
+          systemInstruction: this.buildSystemInstruction(),
+          generationConfig
         };
-      }
 
-      const model = this.genAI.getGenerativeModel(modelConfig);
-      const result = await model.generateContentStream(text);
-      
-      for await (const chunk of result.stream) {
-        const chunkText = chunk.text();
-        if (chunkText) {
-          onChunk(chunkText);
+        // Add thinking config if thinkingBudget is set
+        if (aiConfig.thinkingBudget !== undefined && aiConfig.thinkingBudget !== -1) {
+          modelConfig.thinkingConfig = {
+            thinkingBudget: aiConfig.thinkingBudget
+          };
         }
+
+        const model = this.genAI.getGenerativeModel(modelConfig);
+        const result = await model.generateContentStream(text);
+        
+        for await (const chunk of result.stream) {
+          const chunkText = chunk.text();
+          if (chunkText) {
+            onChunk(chunkText);
+          }
+        }
+      } catch (error) {
+        console.error('Google translation error:', error);
+        throw new Error(`Google translation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
-    } catch (error) {
-      console.error('Translation error:', error);
-      throw new Error(`Translation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } else if (provider === 'openrouter') {
+      try {
+        await openRouterService.translateTextStream(text, this.buildSystemInstruction(), onChunk);
+      } catch (error) {
+        console.error('OpenRouter translation error:', error);
+        throw error;
+      }
+    } else {
+      throw new Error('Translation service not configured. Please set up API key and model in settings.');
     }
   }
 }

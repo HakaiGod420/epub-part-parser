@@ -46,7 +46,8 @@ import {
   ArrowBack as ArrowBackIcon,
   ArrowForward as ArrowForwardIcon,
 } from '@mui/icons-material';
-import { translationService, GEMINI_MODELS } from '../utils/translationService';
+import { translationService, GEMINI_MODELS, TranslationProvider } from '../utils/translationService';
+import { openRouterService, OpenRouterModel } from '../utils/openRouterService';
 import { dictionaryExtractorService, ExtractedTerm } from '../utils/dictionaryExtractorService';
 import { dictionaryEventManager } from '../utils/dictionaryEventManager';
 import TermsExtractionPopup from './TermsExtractionPopup';
@@ -194,6 +195,8 @@ const TranslationModal: React.FC<TranslationModalProps> = ({
   const [currentTab, setCurrentTab] = useState(0);
   const [settings, setSettings] = useState<ModalSettings>(defaultModalSettings);
   const [currentModel, setCurrentModel] = useState<string>('');
+  const [currentProvider, setCurrentProvider] = useState<TranslationProvider>('google');
+  const [openRouterModels, setOpenRouterModels] = useState<OpenRouterModel[]>([]);
   
   // Dictionary extractor state
   const [isExtracting, setIsExtracting] = useState(false);
@@ -282,13 +285,33 @@ const TranslationModal: React.FC<TranslationModalProps> = ({
       setCopied(false);
       setCurrentTab(0);
       
-      // Load current model from translation service
+      // Load current provider and settings
+      const provider = translationService.getCurrentProvider();
       const currentSettings = translationService.getSettings();
+      
+      setCurrentProvider(provider);
+      
       if (currentSettings?.model) {
         setCurrentModel(currentSettings.model);
       }
+
+      // Load OpenRouter models if using OpenRouter
+      if (provider === 'openrouter') {
+        loadOpenRouterModels();
+      }
     }
   }, [open]);
+
+  const loadOpenRouterModels = async () => {
+    try {
+      if (openRouterService.isConfigured()) {
+        const models = await openRouterService.getAvailableModels();
+        setOpenRouterModels(models);
+      }
+    } catch (error) {
+      console.error('Failed to load OpenRouter models in modal:', error);
+    }
+  };
 
   const handleTranslate = async () => {
     if (!translationService.isConfigured()) {
@@ -332,6 +355,22 @@ const TranslationModal: React.FC<TranslationModalProps> = ({
     }
   };
 
+  const handleProviderChange = useCallback((provider: TranslationProvider) => {
+    setCurrentProvider(provider);
+    translationService.switchProvider(provider);
+    
+    // Update current model based on provider
+    const currentSettings = translationService.getSettings();
+    if (currentSettings?.model) {
+      setCurrentModel(currentSettings.model);
+    }
+
+    // Load OpenRouter models if switching to OpenRouter
+    if (provider === 'openrouter') {
+      loadOpenRouterModels();
+    }
+  }, []);
+
   const handleModelChange = useCallback((event: any) => {
     const newModel = event.target.value;
     setCurrentModel(newModel);
@@ -340,9 +379,18 @@ const TranslationModal: React.FC<TranslationModalProps> = ({
     const currentSettings = translationService.getSettings();
     if (currentSettings) {
       const updatedSettings = { ...currentSettings, model: newModel };
+      
+      if (currentProvider === 'openrouter') {
+        // Update OpenRouter service as well
+        const orSettings = openRouterService.getSettings();
+        if (orSettings) {
+          openRouterService.saveSettings({ ...orSettings, model: newModel });
+        }
+      }
+      
       translationService.saveSettings(updatedSettings);
     }
-  }, []);
+  }, [currentProvider]);
 
   const handleDeviceModeChange = useCallback((event: any) => {
     setSettings(prev => ({ ...prev, deviceMode: event.target.value }));
@@ -827,25 +875,89 @@ const TranslationModal: React.FC<TranslationModalProps> = ({
           {/* Settings Content */}
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, maxWidth: 800, mx: 'auto' }}>
             
-            {/* Translation Model Settings */}
+            {/* Translation Provider & Model Settings */}
             <Paper sx={paperStyles}>
               <Typography variant="h6" sx={{ mb: 3, color: currentTheme.accent, display: 'flex', alignItems: 'center', gap: 1 }}>
-                <TranslateIcon /> Translation Model
+                <TranslateIcon /> Translation Settings
               </Typography>
               
               <List disablePadding>
+                {/* Provider Selection */}
+                <ListItem sx={{ px: 0, py: 2 }}>
+                  <ListItemIcon sx={{ minWidth: 40 }}>
+                    <SettingsIcon sx={{ color: currentTheme.accent }} />
+                  </ListItemIcon>
+                  <ListItemText 
+                    primary="Translation Provider"
+                    secondary="Choose between Google Gemini or OpenRouter"
+                    primaryTypographyProps={{ color: currentTheme.text }}
+                    secondaryTypographyProps={{ color: currentTheme.secondary }}
+                    sx={{ flexGrow: 1 }}
+                  />
+                  <FormControl sx={{ width: 200, ml: 2 }}>
+                    <Select
+                      value={currentProvider}
+                      onChange={(e) => handleProviderChange(e.target.value as TranslationProvider)}
+                      size="small"
+                      sx={{
+                        color: currentTheme.text,
+                        backgroundColor: currentTheme.background,
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: currentTheme.border,
+                        },
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: currentTheme.accent,
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: currentTheme.accent,
+                        },
+                        '& .MuiSelect-icon': {
+                          color: currentTheme.text,
+                        },
+                      }}
+                      MenuProps={{
+                        PaperProps: {
+                          sx: {
+                            backgroundColor: currentTheme.paper,
+                            color: currentTheme.text,
+                            border: `1px solid ${currentTheme.border}`,
+                            '& .MuiMenuItem-root': {
+                              color: currentTheme.text,
+                              '&:hover': {
+                                backgroundColor: `${currentTheme.accent}30`,
+                              },
+                              '&.Mui-selected': {
+                                backgroundColor: `${currentTheme.accent}40`,
+                                '&:hover': {
+                                  backgroundColor: `${currentTheme.accent}50`,
+                                },
+                              },
+                            },
+                          },
+                        },
+                      }}
+                    >
+                      <MenuItem value="google">Google Gemini</MenuItem>
+                      <MenuItem value="openrouter">OpenRouter</MenuItem>
+                    </Select>
+                  </FormControl>
+                </ListItem>
+
+                <Divider sx={{ backgroundColor: currentTheme.border, my: 1 }} />
+
+                {/* Model Selection */}
                 <ListItem sx={{ px: 0, py: 2 }}>
                   <ListItemIcon sx={{ minWidth: 40 }}>
                     <TranslateIcon sx={{ color: currentTheme.accent }} />
                   </ListItemIcon>
                   <ListItemText 
-                    primary="Gemini Model"
-                    secondary="Select the AI model for translation"
+                    primary={currentProvider === 'google' ? 'Gemini Model' : 'OpenRouter Model'}
+                    secondary={`Select the ${currentProvider === 'google' ? 'Gemini' : 'OpenRouter'} model for translation`}
                     primaryTypographyProps={{ color: currentTheme.text }}
                     secondaryTypographyProps={{ color: currentTheme.secondary }}
                     sx={{ flexGrow: 1 }}
                   />
-                  <FormControl sx={{ width: 250, ml: 2 }}>
+                  <FormControl sx={{ width: 280, ml: 2 }}>
                     <Select
                       value={currentModel}
                       onChange={handleModelChange}
@@ -893,13 +1005,38 @@ const TranslationModal: React.FC<TranslationModalProps> = ({
                       <MenuItem value="" disabled sx={{ color: currentTheme.secondary }}>
                         Select Model
                       </MenuItem>
-                      {GEMINI_MODELS.map((model) => (
-                        <MenuItem key={model} value={model}>
-                          {model}
-                        </MenuItem>
-                      ))}
+                      {currentProvider === 'google' 
+                        ? GEMINI_MODELS.map((model) => (
+                            <MenuItem key={model} value={model}>
+                              {model}
+                            </MenuItem>
+                          ))
+                        : openRouterModels.map((model) => (
+                            <MenuItem key={model.id} value={model.id}>
+                              <Box>
+                                <Typography variant="body2">{model.name}</Typography>
+                                <Typography variant="caption" sx={{ color: currentTheme.secondary }}>
+                                  {model.id}
+                                </Typography>
+                              </Box>
+                            </MenuItem>
+                          ))
+                      }
                     </Select>
                   </FormControl>
+                </ListItem>
+
+                {/* Provider Status */}
+                <ListItem sx={{ px: 0, py: 1 }}>
+                  <ListItemText 
+                    primary={
+                      <Typography variant="body2" sx={{ color: currentTheme.secondary }}>
+                        Status: {translationService.isConfigured() 
+                          ? `${currentProvider === 'google' ? 'Google Gemini' : 'OpenRouter'} configured ✓` 
+                          : 'Not configured - please check settings'}
+                      </Typography>
+                    }
+                  />
                 </ListItem>
               </List>
             </Paper>

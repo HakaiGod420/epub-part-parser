@@ -8,7 +8,9 @@ A React-based web application for parsing, viewing, and splitting EPUB files int
 - **Chapter Navigation**: Browse and select chapters from the uploaded EPUB
 - **Content Splitting**: Split chapter content into smaller, manageable parts
 - **Content Viewing**: Display chapter content with image support
-- **Translation Support**: Built-in translation functionality for content
+- **Multi-Provider Translation**: Support for both Google Gemini and OpenRouter APIs
+- **AI-Powered Dictionary**: Extract and manage translation terms automatically
+- **Customizable Reading Experience**: Adjustable fonts, themes, and layout options
 - **Collapsible Sections**: Expandable/collapsible interface for better organization
 - **Modern UI**: Clean, responsive design with Material-UI components
 
@@ -39,6 +41,15 @@ npm start
 
 The application will open at [http://localhost:3000](http://localhost:3000).
 
+### Translation Setup
+
+For translation functionality, you'll need to configure one or both APIs:
+
+- **Google Gemini**: See [GEMINI_SETUP.md](GEMINI_SETUP.md) for detailed setup instructions
+- **OpenRouter**: See [OPENROUTER_SETUP.md](OPENROUTER_SETUP.md) for OpenRouter API configuration
+
+Both providers support the same high-quality translation features with different model options.
+
 ## Available Scripts
 
 ### `npm start`
@@ -56,7 +67,8 @@ Builds the app for production to the `build` folder with optimized performance.
 2. **Select Chapter**: Choose a chapter from the chapter selector dropdown
 3. **Split Content**: Use the chapter splitter to divide content into parts
 4. **View Content**: Review the formatted chapter content with images
-5. **Translate**: Use the translation feature for multilingual support
+5. **Configure Translation**: Set up Google Gemini or OpenRouter API in settings
+6. **Translate Content**: Use AI-powered translation with customizable reading experience
 
 ## Main Sections
 
@@ -65,8 +77,9 @@ The application is organized into collapsible sections for better user experienc
 - **File Upload**: Upload your EPUB files
 - **Chapter Selection**: Navigate through available chapters
 - **Chapter Splitter**: Split content into manageable parts
-- **Chapter Content**: View formatted content with images
-- **Translation**: Translate content to different languages
+- **Chapter Content**: View formatted content with images  
+- **Translation Settings**: Configure Google Gemini or OpenRouter APIs
+- **Translation Modal**: Full-screen translation interface with reading customization
 
 Each section can be expanded or collapsed using the toggle buttons in the upper right corner.
 

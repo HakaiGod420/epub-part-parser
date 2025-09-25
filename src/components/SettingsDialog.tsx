@@ -22,7 +22,8 @@ import {
   ExpandMore as ExpandMoreIcon,
   Settings as SettingsIcon,
 } from '@mui/icons-material';
-import { TranslationSettings, GEMINI_MODELS, DEFAULT_SYSTEM_INSTRUCTION, DEFAULT_AI_CONFIG, translationService } from '../utils/translationService';
+import { TranslationSettings, GEMINI_MODELS, DEFAULT_SYSTEM_INSTRUCTION, DEFAULT_AI_CONFIG, translationService, TranslationProvider } from '../utils/translationService';
+import { openRouterService, OpenRouterModel } from '../utils/openRouterService';
 import { 
   TranslationContextSettings, 
   loadTranslationContextSettings, 
@@ -40,12 +41,20 @@ interface SettingsDialogProps {
 }
 
 const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
+  const [currentProvider, setCurrentProvider] = useState<TranslationProvider>('google');
   const [settings, setSettings] = useState<TranslationSettings>({
+    provider: 'google',
     apiKey: '',
     model: 'gemini-2.5-pro',
     systemInstruction: DEFAULT_SYSTEM_INSTRUCTION,
     aiConfig: DEFAULT_AI_CONFIG,
   });
+
+  const [openRouterApiKey, setOpenRouterApiKey] = useState('');
+  const [openRouterModel, setOpenRouterModel] = useState('');
+  const [openRouterModels, setOpenRouterModels] = useState<OpenRouterModel[]>([]);
+  const [isLoadingModels, setIsLoadingModels] = useState(false);
+  const [modelError, setModelError] = useState<string | null>(null);
 
   const [contextSettings, setContextSettings] = useState<TranslationContextSettings>({
     includeDictionary: true,
@@ -61,8 +70,18 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
   useEffect(() => {
     if (open) {
       const currentSettings = translationService.getSettings();
+      const providerSettings = translationService.getProviderSettings();
+      const provider = translationService.getCurrentProvider();
+      
+      setCurrentProvider(provider);
+      
       if (currentSettings) {
         setSettings(currentSettings);
+      }
+      
+      if (providerSettings?.openRouterSettings) {
+        setOpenRouterApiKey(providerSettings.openRouterSettings.apiKey || '');
+        setOpenRouterModel(providerSettings.openRouterSettings.model || '');
       }
       
       const currentContextSettings = loadTranslationContextSettings();
@@ -73,13 +92,112 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
     }
   }, [open]);
 
-  const handleSave = () => {
-    if (!settings.apiKey.trim()) {
-      alert('Please enter a valid API key');
+  const handleLoadOpenRouterModels = async () => {
+    if (!openRouterApiKey.trim()) {
+      setModelError('Please enter an OpenRouter API key first');
       return;
     }
 
-    translationService.saveSettings(settings);
+    setIsLoadingModels(true);
+    setModelError(null);
+    
+    try {
+      // Save the API key temporarily to openRouterService
+      openRouterService.saveSettings({
+        apiKey: openRouterApiKey,
+        model: openRouterModel,
+        baseUrl: 'https://openrouter.ai/api/v1',
+        siteUrl: 'https://epub-parser.local',
+        siteName: 'EPUB Parser'
+      });
+      
+      const models = await openRouterService.getAvailableModels();
+      setOpenRouterModels(models);
+      
+      if (models.length > 0 && !openRouterModel) {
+        // Set first model as default if none selected
+        setOpenRouterModel(models[0].id);
+      }
+    } catch (error) {
+      console.error('Failed to load OpenRouter models:', error);
+      setModelError(error instanceof Error ? error.message : 'Failed to load models');
+    } finally {
+      setIsLoadingModels(false);
+    }
+  };
+
+  const handleProviderChange = (provider: TranslationProvider) => {
+    setCurrentProvider(provider);
+    
+    // Update the settings provider
+    setSettings(prev => ({
+      ...prev,
+      provider
+    }));
+  };
+
+  const handleOpenRouterModelChange = (modelId: string) => {
+    setOpenRouterModel(modelId);
+    
+    // Save immediately to localStorage so it persists even if models aren't loaded
+    const currentOpenRouterSettings = openRouterService.getSettings() || {
+      apiKey: openRouterApiKey,
+      model: '',
+      baseUrl: 'https://openrouter.ai/api/v1',
+      siteUrl: 'https://epub-parser.local',
+      siteName: 'EPUB Parser'
+    };
+    
+    const updatedSettings = {
+      ...currentOpenRouterSettings,
+      apiKey: openRouterApiKey,
+      model: modelId
+    };
+    
+    openRouterService.saveSettings(updatedSettings);
+  };
+
+  const handleSave = () => {
+    if (currentProvider === 'google') {
+      if (!settings.apiKey.trim()) {
+        alert('Please enter a valid Google API key');
+        return;
+      }
+      translationService.saveSettings({
+        ...settings,
+        provider: 'google'
+      });
+    } else if (currentProvider === 'openrouter') {
+      if (!openRouterApiKey.trim()) {
+        alert('Please enter a valid OpenRouter API key');
+        return;
+      }
+      if (!openRouterModel.trim()) {
+        alert('Please select an OpenRouter model');
+        return;
+      }
+      
+      // Save OpenRouter settings
+      const openRouterSettings = {
+        apiKey: openRouterApiKey,
+        model: openRouterModel,
+        baseUrl: 'https://openrouter.ai/api/v1',
+        siteUrl: 'https://epub-parser.local',
+        siteName: 'EPUB Parser'
+      };
+      
+      openRouterService.saveSettings(openRouterSettings);
+      
+      // Save as translation settings for compatibility
+      translationService.saveSettings({
+        provider: 'openrouter',
+        apiKey: openRouterApiKey,
+        model: openRouterModel,
+        systemInstruction: settings.systemInstruction,
+        aiConfig: DEFAULT_AI_CONFIG // OpenRouter doesn't use Google's AI config
+      });
+    }
+
     saveTranslationContextSettings(contextSettings);
     dictionaryExtractorService.saveSettings(extractorSettings);
     onClose();
@@ -92,6 +210,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
       setSettings(currentSettings);
     } else {
       setSettings({
+        provider: 'google',
         apiKey: '',
         model: 'gemini-2.5-pro',
         systemInstruction: DEFAULT_SYSTEM_INSTRUCTION,
@@ -125,42 +244,165 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
       </DialogTitle>
       <DialogContent>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 1 }}>
-          {/* API Key */}
-          <TextField
-            id="gemini-api-key"
-            label="Gemini API Key"
-            type="password"
-            value={settings.apiKey}
-            onChange={(e) => setSettings(prev => ({ ...prev, apiKey: e.target.value }))}
-            fullWidth
-            required
-            helperText="Get your API key from Google AI Studio"
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                backgroundColor: '#424242',
-              }
-            }}
-          />
+          {/* Translation Provider Selection */}
+          <Box sx={{ border: '1px solid #444', borderRadius: 1, p: 2, backgroundColor: '#333' }}>
+            <Typography variant="h6" sx={{ color: '#4caf50', mb: 2 }}>
+              Translation Provider
+            </Typography>
+            <FormControl fullWidth>
+              <InputLabel>Select Translation API</InputLabel>
+              <Select
+                value={currentProvider}
+                label="Select Translation API"
+                onChange={(e) => handleProviderChange(e.target.value as TranslationProvider)}
+                sx={{
+                  backgroundColor: '#424242',
+                }}
+              >
+                <MenuItem value="google">Google Gemini</MenuItem>
+                <MenuItem value="openrouter">OpenRouter</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
 
-          {/* Model Selection */}
-          <FormControl fullWidth>
-            <InputLabel>Gemini Model</InputLabel>
-            <Select
-              id="gemini-model-selector"
-              value={settings.model}
-              label="Gemini Model"
-              onChange={(e) => setSettings(prev => ({ ...prev, model: e.target.value }))}
-              sx={{
-                backgroundColor: '#424242',
-              }}
-            >
-              {GEMINI_MODELS.map((model) => (
-                <MenuItem key={model} value={model}>
-                  {model}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          {/* Google API Settings */}
+          {currentProvider === 'google' && (
+            <>
+              <TextField
+                id="gemini-api-key"
+                label="Gemini API Key"
+                type="password"
+                value={settings.apiKey}
+                onChange={(e) => setSettings(prev => ({ ...prev, apiKey: e.target.value }))}
+                fullWidth
+                required
+                helperText="Get your API key from Google AI Studio"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: '#424242',
+                  }
+                }}
+              />
+
+              {/* Model Selection */}
+              <FormControl fullWidth>
+                <InputLabel>Gemini Model</InputLabel>
+                <Select
+                  id="gemini-model-selector"
+                  value={settings.model}
+                  label="Gemini Model"
+                  onChange={(e) => setSettings(prev => ({ ...prev, model: e.target.value }))}
+                  sx={{
+                    backgroundColor: '#424242',
+                  }}
+                >
+                  {GEMINI_MODELS.map((model) => (
+                    <MenuItem key={model} value={model}>
+                      {model}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </>
+          )}
+
+          {/* OpenRouter API Settings */}
+          {currentProvider === 'openrouter' && (
+            <>
+              <TextField
+                label="OpenRouter API Key"
+                type="password"
+                value={openRouterApiKey}
+                onChange={(e) => setOpenRouterApiKey(e.target.value)}
+                fullWidth
+                required
+                helperText="Get your API key from OpenRouter.ai"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: '#424242',
+                  }
+                }}
+              />
+
+              <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
+                <Button
+                  variant="outlined"
+                  onClick={handleLoadOpenRouterModels}
+                  disabled={isLoadingModels}
+                  sx={{
+                    minWidth: 150,
+                    height: 56,
+                    borderColor: '#4caf50',
+                    color: '#4caf50',
+                    '&:hover': {
+                      backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                      borderColor: '#4caf50',
+                    },
+                  }}
+                >
+                  {isLoadingModels ? 'Loading...' : 'Load Models'}
+                </Button>
+
+                {openRouterModels.length > 0 ? (
+                  <FormControl fullWidth>
+                    <InputLabel>OpenRouter Model</InputLabel>
+                    <Select
+                      value={openRouterModel}
+                      label="OpenRouter Model"
+                      onChange={(e) => handleOpenRouterModelChange(e.target.value)}
+                      sx={{
+                        backgroundColor: '#424242',
+                      }}
+                    >
+                      {openRouterModels.map((model) => (
+                        <MenuItem key={model.id} value={model.id}>
+                          <Box>
+                            <Typography variant="body2">{model.name}</Typography>
+                            <Typography variant="caption" sx={{ color: '#b0b0b0' }}>
+                              {model.id} - Context: {model.context_length}
+                            </Typography>
+                          </Box>
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                ) : (
+                  <TextField
+                    label="OpenRouter Model ID"
+                    value={openRouterModel}
+                    onChange={(e) => handleOpenRouterModelChange(e.target.value)}
+                    fullWidth
+                    placeholder="e.g., openai/gpt-4o, anthropic/claude-3-opus"
+                    helperText="Enter model ID directly or load models above"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        backgroundColor: '#424242',
+                      }
+                    }}
+                  />
+                )}
+              </Box>
+
+              {modelError && (
+                <Typography variant="body2" sx={{ color: '#f44336' }}>
+                  {modelError}
+                </Typography>
+              )}
+
+              {openRouterModels.length > 0 ? (
+                <Typography variant="body2" sx={{ color: '#b0b0b0' }}>
+                  Loaded {openRouterModels.length} models. The system instruction for Google API will be reused with OpenRouter.
+                </Typography>
+              ) : (
+                <Typography variant="body2" sx={{ color: '#b0b0b0' }}>
+                  You can enter a model ID manually (like "openai/gpt-4o") or load the full model list above. 
+                  Selected models are saved automatically and will work for translation even without loading the full list.
+                </Typography>
+              )}
+            </>
+          )}
+
+
 
           {/* AI Configuration Settings */}
           <Box sx={{ border: '1px solid #444', borderRadius: 1, p: 2, backgroundColor: '#333' }}>
