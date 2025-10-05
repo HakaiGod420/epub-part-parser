@@ -27,6 +27,7 @@ import {
   ListItemIcon,
   ListItemText,
   Divider,
+  LinearProgress,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -62,6 +63,9 @@ interface TranslationModalProps {
   onNextChapter?: () => void;
   hasPreviousChapter?: boolean;
   hasNextChapter?: boolean;
+  // Chapter progress props
+  currentChapter?: number;
+  totalChapters?: number;
 }
 
 interface ModalSettings {
@@ -146,28 +150,31 @@ const fontDisplayNames: { [key: string]: string } = {
 
 const themes = {
   dark: {
-    background: '#1e1e1e',
-    paper: '#2d2d2d',
-    text: '#ffffff',
-    secondary: '#b0b0b0',
-    accent: '#4caf50',
-    border: '#444',
+    background: '#0f0f1a',
+    paper: '#1a1a2e',
+    text: '#f1f5f9',
+    secondary: '#94a3b8',
+    accent: '#7c3aed',
+    border: 'rgba(124, 58, 237, 0.2)',
+    gradient: 'linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, rgba(6, 182, 212, 0.1) 100%)',
   },
   black: {
     background: '#000000',
-    paper: '#111111',
-    text: '#ffffff',
-    secondary: '#cccccc',
-    accent: '#4caf50',
-    border: '#333',
+    paper: '#0a0a0a',
+    text: '#f1f5f9',
+    secondary: '#94a3b8',
+    accent: '#a78bfa',
+    border: 'rgba(167, 139, 250, 0.2)',
+    gradient: 'linear-gradient(135deg, rgba(167, 139, 250, 0.1) 0%, rgba(34, 211, 238, 0.1) 100%)',
   },
   white: {
     background: '#ffffff',
-    paper: '#f5f5f5',
-    text: '#000000',
-    secondary: '#666666',
-    accent: '#2e7d32',
-    border: '#e0e0e0',
+    paper: '#f8fafc',
+    text: '#1e293b',
+    secondary: '#64748b',
+    accent: '#7c3aed',
+    border: 'rgba(124, 58, 237, 0.15)',
+    gradient: 'linear-gradient(135deg, rgba(124, 58, 237, 0.05) 0%, rgba(6, 182, 212, 0.05) 100%)',
   },
 };
 
@@ -187,6 +194,8 @@ const TranslationModal: React.FC<TranslationModalProps> = ({
   onNextChapter,
   hasPreviousChapter = false,
   hasNextChapter = false,
+  currentChapter,
+  totalChapters,
 }) => {
   const [translatedText, setTranslatedText] = useState<string>('');
   const [isTranslating, setIsTranslating] = useState(false);
@@ -203,6 +212,10 @@ const TranslationModal: React.FC<TranslationModalProps> = ({
   const [extractedTerms, setExtractedTerms] = useState<ExtractedTerm[]>([]);
   const [extractionError, setExtractionError] = useState<string | null>(null);
   const [showExtractionPopup, setShowExtractionPopup] = useState(false);
+  
+  // Reading progress state
+  const [readingProgress, setReadingProgress] = useState(0);
+  const contentRef = useRef<HTMLDivElement>(null);
   
   // Use refs to track if we should save settings to avoid infinite loops
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -420,6 +433,46 @@ const TranslationModal: React.FC<TranslationModalProps> = ({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [open, hasPreviousChapter, hasNextChapter, onPreviousChapter, onNextChapter]);
 
+  // Reading progress tracker
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!contentRef.current) return;
+      
+      const element = contentRef.current;
+      const scrollTop = element.scrollTop;
+      const scrollHeight = element.scrollHeight - element.clientHeight;
+      
+      if (scrollHeight > 0) {
+        const progress = (scrollTop / scrollHeight) * 100;
+        setReadingProgress(Math.min(100, Math.max(0, progress)));
+      } else {
+        setReadingProgress(0);
+      }
+    };
+
+    const currentContent = contentRef.current;
+    if (currentContent && currentTab === 0) {
+      currentContent.addEventListener('scroll', handleScroll);
+      // Initial calculation after a short delay to ensure content is rendered
+      const timer = setTimeout(handleScroll, 100);
+      
+      return () => {
+        currentContent.removeEventListener('scroll', handleScroll);
+        clearTimeout(timer);
+      };
+    }
+  }, [translatedText, currentTab, settings.showOriginalText]);
+
+  // Reset reading progress when modal opens or chapter changes
+  useEffect(() => {
+    if (open) {
+      setReadingProgress(0);
+      if (contentRef.current) {
+        contentRef.current.scrollTop = 0;
+      }
+    }
+  }, [open, text]);
+
   const handleClose = () => {
     onClose();
   };
@@ -624,6 +677,126 @@ const TranslationModal: React.FC<TranslationModalProps> = ({
         </Box>
       </DialogTitle>
 
+      {/* Reading Progress Bar */}
+      <Box sx={{ 
+        position: 'relative',
+        height: 8,
+        backgroundColor: currentTheme.background,
+        borderTop: `1px solid ${currentTheme.border}20`,
+      }}>
+        <LinearProgress 
+          variant="determinate" 
+          value={readingProgress}
+          sx={{
+            height: 8,
+            backgroundColor: `${currentTheme.border}`,
+            '& .MuiLinearProgress-bar': {
+              backgroundColor: currentTheme.accent,
+              background: `linear-gradient(90deg, ${currentTheme.accent} 0%, ${themes[settings.theme].secondary} 100%)`,
+              boxShadow: `0 0 10px ${currentTheme.accent}80`,
+              transition: 'transform 0.1s linear',
+            },
+          }}
+        />
+        {readingProgress > 0 && (
+          <Typography
+            variant="caption"
+            sx={{
+              position: 'absolute',
+              right: 10,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: currentTheme.text,
+              fontSize: '0.7rem',
+              fontWeight: 700,
+              textShadow: `0 0 8px ${currentTheme.background}, 0 0 4px ${currentTheme.background}`,
+              backgroundColor: `${currentTheme.background}90`,
+              px: 1,
+              py: 0.25,
+              borderRadius: 0.75,
+              pointerEvents: 'none',
+              zIndex: 1,
+            }}
+          >
+            {Math.round(readingProgress)}%
+          </Typography>
+        )}
+      </Box>
+
+      {/* Overall Chapter Progress Bar */}
+      {currentChapter !== undefined && totalChapters !== undefined && totalChapters > 0 && (
+        <>
+          {/* Spacer for separation */}
+          <Box sx={{ 
+            height: '8px',
+            background: `linear-gradient(to bottom, ${currentTheme.background} 0%, ${currentTheme.paper} 100%)`,
+            borderBottom: `1px solid ${currentTheme.border}20`,
+          }} />
+          
+          <Box sx={{ 
+            position: 'relative',
+            height: 28,
+            backgroundColor: currentTheme.paper,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderBottom: `1px solid ${currentTheme.border}`,
+          }}>
+            <LinearProgress 
+              variant="determinate" 
+              value={(currentChapter / totalChapters) * 100}
+              sx={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: '100%',
+                backgroundColor: `${currentTheme.paper}`,
+                borderRadius: 0,
+                '& .MuiLinearProgress-bar': {
+                  backgroundColor: themes[settings.theme].secondary,
+                  background: `linear-gradient(90deg, ${themes[settings.theme].secondary} 0%, ${currentTheme.accent} 100%)`,
+                  boxShadow: `0 0 12px ${themes[settings.theme].secondary}60`,
+                  transition: 'transform 0.4s ease',
+                  opacity: 0.25,
+                },
+              }}
+            />
+            <Box
+              sx={{
+                position: 'relative',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                pointerEvents: 'none',
+                zIndex: 2,
+              }}
+            >
+              <Typography
+                variant="body2"
+                sx={{
+                  color: currentTheme.text,
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  textShadow: `0 0 12px ${currentTheme.background}, 0 0 8px ${currentTheme.background}, 0 0 4px ${currentTheme.background}`,
+                  backgroundColor: `${currentTheme.background}E6`,
+                  px: 2.5,
+                  py: 0.75,
+                  borderRadius: 1.5,
+                  backdropFilter: 'blur(8px)',
+                  border: `1px solid ${currentTheme.border}`,
+                  boxShadow: `0 2px 6px ${currentTheme.accent}30`,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                📖 Chapter {currentChapter} / {totalChapters}
+              </Typography>
+            </Box>
+          </Box>
+        </>
+      )}
+
       <DialogContent sx={{ 
         p: 0, 
         backgroundColor: currentTheme.background,
@@ -667,7 +840,7 @@ const TranslationModal: React.FC<TranslationModalProps> = ({
 
         <TabPanel value={currentTab} index={0}>
           {/* Translation Content */}
-          <Box sx={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 200px)' }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 200px)', overflow: 'hidden' }}>
             
             {/* Action Bar */}
             <Box sx={{ 
@@ -690,7 +863,7 @@ const TranslationModal: React.FC<TranslationModalProps> = ({
                     backgroundColor: currentTheme.accent,
                     color: '#ffffff',
                     '&:hover': {
-                      backgroundColor: settings.theme === 'white' ? '#2e7d32' : '#45a049',
+                      backgroundColor: settings.theme === 'white' ? '#6d28d9' : '#8b5cf6',
                     },
                     '&:disabled': {
                       backgroundColor: currentTheme.border,
@@ -781,7 +954,27 @@ const TranslationModal: React.FC<TranslationModalProps> = ({
             )}
 
             {/* Content Display */}
-            <Box sx={{ flex: 1, overflow: 'auto' }}>
+            <Box 
+              ref={contentRef}
+              sx={{ 
+                flex: 1, 
+                overflow: 'auto',
+                overflowY: 'scroll',
+                '&::-webkit-scrollbar': {
+                  width: '8px',
+                },
+                '&::-webkit-scrollbar-track': {
+                  background: currentTheme.background,
+                },
+                '&::-webkit-scrollbar-thumb': {
+                  background: currentTheme.accent,
+                  borderRadius: '4px',
+                  '&:hover': {
+                    background: currentTheme.secondary,
+                  },
+                },
+              }}
+            >
               {settings.showOriginalText && (
                 <Paper 
                   elevation={1} 
@@ -1127,7 +1320,7 @@ const TranslationModal: React.FC<TranslationModalProps> = ({
                     <Slider
                       value={settings.fontSize}
                       min={12}
-                      max={24}
+                      max={48}
                       step={1}
                       marks
                       onChange={handleFontSizeChange}
@@ -1480,7 +1673,7 @@ const TranslationModal: React.FC<TranslationModalProps> = ({
             backgroundColor: currentTheme.accent,
             color: '#ffffff',
             '&:hover': {
-              backgroundColor: settings.theme === 'white' ? '#2e7d32' : '#45a049',
+              backgroundColor: settings.theme === 'white' ? '#6d28d9' : '#8b5cf6',
             },
           }}
         >

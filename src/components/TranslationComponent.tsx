@@ -23,6 +23,9 @@ interface TranslationComponentProps {
   onNextChapter?: () => void;
   hasPreviousChapter?: boolean;
   hasNextChapter?: boolean;
+  // Chapter progress props
+  currentChapter?: number;
+  totalChapters?: number;
 }
 
 const TranslationComponent: React.FC<TranslationComponentProps> = ({ 
@@ -33,6 +36,8 @@ const TranslationComponent: React.FC<TranslationComponentProps> = ({
   onNextChapter,
   hasPreviousChapter,
   hasNextChapter,
+  currentChapter,
+  totalChapters,
 }) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [chapterContext, setChapterContext] = useState<Partial<ChapterContext>>({});
@@ -77,11 +82,17 @@ const TranslationComponent: React.FC<TranslationComponentProps> = ({
 
   return (
     <Box sx={{ mt: 4 }}>
-      <Divider sx={{ mb: 3, backgroundColor: '#4caf50' }} />
+      <Divider sx={{ mb: 3, backgroundColor: 'rgba(124, 58, 237, 0.3)' }} />
       
       {/* Translation Header */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-        <Typography variant="h5" sx={{ color: '#4caf50', fontWeight: 'bold' }}>
+        <Typography variant="h5" sx={{ 
+          background: 'linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text',
+          fontWeight: 'bold' 
+        }}>
           Translation
           {chapterTitle && (
             <Typography variant="subtitle1" sx={{ color: '#b0b0b0', mt: 0.5 }}>
@@ -96,13 +107,17 @@ const TranslationComponent: React.FC<TranslationComponentProps> = ({
           onClick={handleOpenModal}
           disabled={!contextualText.trim()}
           sx={{
-            backgroundColor: '#4caf50',
+            background: 'linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%)',
+            boxShadow: '0 4px 20px rgba(124, 58, 237, 0.4)',
             '&:hover': {
-              backgroundColor: '#45a049',
+              background: 'linear-gradient(135deg, #6d28d9 0%, #8b5cf6 100%)',
+              transform: 'translateY(-2px)',
+              boxShadow: '0 6px 24px rgba(124, 58, 237, 0.5)',
             },
             '&:disabled': {
-              backgroundColor: '#333',
+              background: '#333',
               color: '#666',
+              boxShadow: 'none',
             },
           }}
         >
@@ -112,11 +127,12 @@ const TranslationComponent: React.FC<TranslationComponentProps> = ({
 
       {/* Getting Started Message */}
       <Paper 
-        elevation={1} 
+        elevation={0} 
         sx={{ 
           p: 3, 
-          backgroundColor: '#2d2d2d',
-          border: '1px solid #444',
+          backgroundColor: 'background.paper',
+          border: '1px solid rgba(124, 58, 237, 0.2)',
+          borderRadius: 3,
           textAlign: 'center',
         }}
       >
@@ -133,8 +149,8 @@ const TranslationComponent: React.FC<TranslationComponentProps> = ({
         
         {/* Context Information */}
         {chapterContext && (
-          <Box sx={{ mt: 2, p: 2, backgroundColor: '#1e1e1e', borderRadius: 1, textAlign: 'left' }}>
-            <Typography variant="subtitle2" sx={{ color: '#4caf50', mb: 1 }}>
+          <Box sx={{ mt: 2, p: 2, backgroundColor: 'rgba(124, 58, 237, 0.05)', border: '1px solid rgba(124, 58, 237, 0.15)', borderRadius: 2, textAlign: 'left' }}>
+            <Typography variant="subtitle2" sx={{ color: '#a78bfa', mb: 1, fontWeight: 600 }}>
               Translation Context Includes:
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
@@ -175,6 +191,8 @@ const TranslationComponent: React.FC<TranslationComponentProps> = ({
         onNextChapter={onNextChapter}
         hasPreviousChapter={hasPreviousChapter}
         hasNextChapter={hasNextChapter}
+        currentChapter={currentChapter}
+        totalChapters={totalChapters}
       />
     </Box>
   );

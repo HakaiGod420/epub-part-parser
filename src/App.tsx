@@ -7,11 +7,13 @@ import TranslationComponent from "./components/TranslationComponent";
 import GearMenu from "./components/GearMenu"; // Import GearMenu
 import { parseEpub, getChapterContent, getBookTitle } from "./utils/epubParser";
 import { stripHtml } from "./utils/stripHtml";
-import { Box, Container, Typography, Paper, Alert, IconButton, Collapse } from "@mui/material";
+import { Box, Container, Typography, Paper, Alert, IconButton, Collapse, Chip } from "@mui/material";
 import './App.css'; // Import the CSS file
 import CloseIcon from '@mui/icons-material/Close'; // Import CloseIcon
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const App: React.FC = () => {
   const [chapters, setChapters] = useState<Array<{ label: string; href: string }>>([]);
@@ -114,9 +116,16 @@ const App: React.FC = () => {
   }, [book, handleSelectChapter, epubName]);
 
   return (
-    <Container maxWidth="md" className="container" sx={{ position: 'relative', marginTop: 4 }}>
+    <Container maxWidth="lg" className="container" sx={{ position: 'relative', marginTop: 4, marginBottom: 4 }}>
     {/* Improved Alert */}
+    <AnimatePresence>
     {error && (
+      <motion.div
+        initial={{ opacity: 0, y: -50 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -50 }}
+        transition={{ duration: 0.3 }}
+      >
       <Alert
         severity="error"
         onClose={handleCloseError}
@@ -128,12 +137,14 @@ const App: React.FC = () => {
           width: '90%',
           maxWidth: 600,
           zIndex: 1300,
-          boxShadow: 3,
-          borderRadius: 1,
+          boxShadow: '0 8px 32px rgba(239, 68, 68, 0.3)',
+          borderRadius: 3,
           borderLeft: '4px solid',
           borderColor: 'error.main',
-          backgroundColor: 'error.dark',
-          color: 'error.contrastText',
+          backgroundColor: 'rgba(239, 68, 68, 0.1)',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid rgba(239, 68, 68, 0.2)',
+          color: 'error.light',
           '& .MuiAlert-message': {
             flex: 1,
             paddingRight: 1,
@@ -154,70 +165,124 @@ const App: React.FC = () => {
           {error}
         </Typography>
       </Alert>
+      </motion.div>
     )}
+    </AnimatePresence>
 
     {/* Header Section */}
-    <Box 
-      display="flex" 
-      justifyContent="space-between" 
-      alignItems="center"
+    <motion.div
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+    <Paper
+      elevation={0}
       sx={{ 
         mb: 4,
         padding: 3,
-        backgroundColor: 'background.paper',
-        borderRadius: 2,
-        boxShadow: 3
+        background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, rgba(6, 182, 212, 0.1) 100%)',
+        borderRadius: 4,
+        border: '1px solid rgba(124, 58, 237, 0.2)',
+        position: 'relative',
+        overflow: 'hidden',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '3px',
+          background: 'linear-gradient(90deg, #7c3aed 0%, #06b6d4 100%)',
+        }
       }}
     >
-      <Typography 
-        variant="h4" 
-        component="h1"
-        sx={{ 
-          fontWeight: 700,
-          letterSpacing: '-0.5px',
-          color: 'primary.main'
-        }}
-      >
-        EPUB Content Splitter
-      </Typography>
-      {bookTitle && (
-        <Typography 
-          variant="body2" 
-          sx={{ 
-            color: 'text.secondary',
-            fontStyle: 'italic',
-            marginTop: 1
-          }}
-        >
-          Book: {bookTitle}
-        </Typography>
-      )}
-      <GearMenu bookTitle={bookTitle} />
-    </Box>
+      <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
+        <Box display="flex" alignItems="center" gap={2}>
+          <Box
+            sx={{
+              width: 48,
+              height: 48,
+              borderRadius: 2,
+              background: 'linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 4px 20px rgba(124, 58, 237, 0.3)',
+            }}
+          >
+            <MenuBookIcon sx={{ color: 'white', fontSize: 28 }} />
+          </Box>
+          <Box>
+            <Typography 
+              variant="h4" 
+              component="h1"
+              sx={{ 
+                fontWeight: 800,
+                letterSpacing: '-0.02em',
+                background: 'linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}
+            >
+              EPUB Content Splitter
+            </Typography>
+            {bookTitle && (
+              <Chip
+                label={bookTitle}
+                icon={<MenuBookIcon />}
+                sx={{ 
+                  mt: 1,
+                  backgroundColor: 'rgba(124, 58, 237, 0.15)',
+                  color: 'primary.light',
+                  fontWeight: 600,
+                  border: '1px solid rgba(124, 58, 237, 0.3)',
+                }}
+              />
+            )}
+          </Box>
+        </Box>
+        <GearMenu bookTitle={bookTitle} />
+      </Box>
+    </Paper>
+    </motion.div>
 
     {/* Main Content */}
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       {/* File Upload Section */}
-      <Paper elevation={2} sx={{ 
-        borderRadius: 3,
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+      >
+      <Paper elevation={0} sx={{ 
+        borderRadius: 4,
         backgroundColor: 'background.paper',
-        boxShadow: 3
+        overflow: 'hidden',
+        transition: 'all 0.3s ease',
       }}>
         <Box sx={{ 
           display: 'flex', 
           justifyContent: 'space-between', 
           alignItems: 'center',
-          padding: 2,
-          borderBottom: fileUploadExpanded ? '1px solid rgba(255, 255, 255, 0.12)' : 'none'
-        }}>
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            File Upload
+          padding: 2.5,
+          background: fileUploadExpanded 
+            ? 'linear-gradient(90deg, rgba(124, 58, 237, 0.05) 0%, rgba(6, 182, 212, 0.05) 100%)'
+            : 'transparent',
+          borderBottom: fileUploadExpanded ? '1px solid rgba(124, 58, 237, 0.15)' : 'none',
+          cursor: 'pointer',
+          '&:hover': {
+            background: 'linear-gradient(90deg, rgba(124, 58, 237, 0.08) 0%, rgba(6, 182, 212, 0.08) 100%)',
+          }
+        }}
+        onClick={toggleFileUpload}
+        >
+          <Typography variant="h6" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
+            📤 File Upload
           </Typography>
           <IconButton 
-            onClick={toggleFileUpload}
             sx={{ 
               color: 'primary.main',
-              '&:hover': { backgroundColor: 'rgba(144, 202, 249, 0.08)' }
             }}
           >
             {fileUploadExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
@@ -229,29 +294,53 @@ const App: React.FC = () => {
           </Box>
         </Collapse>
       </Paper>
+      </motion.div>
 
       {/* Chapter Selection */}
       {chapters.length > 0 && (
-        <Paper elevation={2} sx={{ 
-          borderRadius: 3,
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+        <Paper elevation={0} sx={{ 
+          borderRadius: 4,
           backgroundColor: 'background.paper',
-          boxShadow: 3
+          overflow: 'hidden',
+          transition: 'all 0.3s ease',
         }}>
           <Box sx={{ 
             display: 'flex', 
             justifyContent: 'space-between', 
             alignItems: 'center',
-            padding: 2,
-            borderBottom: chapterSelectionExpanded ? '1px solid rgba(255, 255, 255, 0.12)' : 'none'
-          }}>
-            <Typography variant="h6" sx={{ fontWeight: 600 }}>
-              Chapter Selection
+            padding: 2.5,
+            background: chapterSelectionExpanded 
+              ? 'linear-gradient(90deg, rgba(124, 58, 237, 0.05) 0%, rgba(6, 182, 212, 0.05) 100%)'
+              : 'transparent',
+            borderBottom: chapterSelectionExpanded ? '1px solid rgba(124, 58, 237, 0.15)' : 'none',
+            cursor: 'pointer',
+            '&:hover': {
+              background: 'linear-gradient(90deg, rgba(124, 58, 237, 0.08) 0%, rgba(6, 182, 212, 0.08) 100%)',
+            }
+          }}
+          onClick={toggleChapterSelection}
+          >
+            <Typography variant="h6" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
+              📚 Chapter Selection
+              <Chip 
+                label={chapters.length} 
+                size="small" 
+                sx={{ 
+                  ml: 1,
+                  backgroundColor: 'rgba(124, 58, 237, 0.2)',
+                  color: 'primary.light',
+                  fontWeight: 700,
+                }}
+              />
             </Typography>
             <IconButton 
-              onClick={toggleChapterSelection}
               sx={{ 
                 color: 'primary.main',
-                '&:hover': { backgroundColor: 'rgba(144, 202, 249, 0.08)' }
               }}
             >
               {chapterSelectionExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
@@ -268,31 +357,45 @@ const App: React.FC = () => {
             </Box>
           </Collapse>
         </Paper>
+        </motion.div>
       )}
 
       {/* Chapter Processing */}
       {chapterContent && (
         <>
-          <Paper elevation={2} sx={{ 
-            borderRadius: 3,
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+          >
+          <Paper elevation={0} sx={{ 
+            borderRadius: 4,
             backgroundColor: 'background.paper',
-            boxShadow: 3
+            overflow: 'hidden',
+            transition: 'all 0.3s ease',
           }}>
             <Box sx={{ 
               display: 'flex', 
               justifyContent: 'space-between', 
               alignItems: 'center',
-              padding: 2,
-              borderBottom: chapterSplitterExpanded ? '1px solid rgba(255, 255, 255, 0.12)' : 'none'
-            }}>
-              <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                Chapter Splitter
+              padding: 2.5,
+              background: chapterSplitterExpanded 
+                ? 'linear-gradient(90deg, rgba(124, 58, 237, 0.05) 0%, rgba(6, 182, 212, 0.05) 100%)'
+                : 'transparent',
+              borderBottom: chapterSplitterExpanded ? '1px solid rgba(124, 58, 237, 0.15)' : 'none',
+              cursor: 'pointer',
+              '&:hover': {
+                background: 'linear-gradient(90deg, rgba(124, 58, 237, 0.08) 0%, rgba(6, 182, 212, 0.08) 100%)',
+              }
+            }}
+            onClick={toggleChapterSplitter}
+            >
+              <Typography variant="h6" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
+                ✂️ Chapter Splitter
               </Typography>
               <IconButton 
-                onClick={toggleChapterSplitter}
                 sx={{ 
                   color: 'primary.main',
-                  '&:hover': { backgroundColor: 'rgba(144, 202, 249, 0.08)' }
                 }}
               >
                 {chapterSplitterExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
@@ -308,11 +411,18 @@ const App: React.FC = () => {
               </Box>
             </Collapse>
           </Paper>
+          </motion.div>
 
-          <Paper elevation={2} sx={{ 
-            borderRadius: 3,
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+          >
+          <Paper elevation={0} sx={{ 
+            borderRadius: 4,
             backgroundColor: 'background.paper',
-            boxShadow: 3,
+            overflow: 'hidden',
+            transition: 'all 0.3s ease',
             '& pre': { 
               whiteSpace: 'pre-wrap',
               fontFamily: 'monospace',
@@ -323,17 +433,24 @@ const App: React.FC = () => {
               display: 'flex', 
               justifyContent: 'space-between', 
               alignItems: 'center',
-              padding: 2,
-              borderBottom: chapterContentExpanded ? '1px solid rgba(255, 255, 255, 0.12)' : 'none'
-            }}>
-              <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                Chapter Content
+              padding: 2.5,
+              background: chapterContentExpanded 
+                ? 'linear-gradient(90deg, rgba(124, 58, 237, 0.05) 0%, rgba(6, 182, 212, 0.05) 100%)'
+                : 'transparent',
+              borderBottom: chapterContentExpanded ? '1px solid rgba(124, 58, 237, 0.15)' : 'none',
+              cursor: 'pointer',
+              '&:hover': {
+                background: 'linear-gradient(90deg, rgba(124, 58, 237, 0.08) 0%, rgba(6, 182, 212, 0.08) 100%)',
+              }
+            }}
+            onClick={toggleChapterContent}
+            >
+              <Typography variant="h6" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
+                📄 Chapter Content
               </Typography>
               <IconButton 
-                onClick={toggleChapterContent}
                 sx={{ 
                   color: 'primary.main',
-                  '&:hover': { backgroundColor: 'rgba(144, 202, 249, 0.08)' }
                 }}
               >
                 {chapterContentExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
@@ -349,28 +466,42 @@ const App: React.FC = () => {
               </Box>
             </Collapse>
           </Paper>
+          </motion.div>
 
           {/* Translation Section - Separate from Chapter Content */}
-          <Paper elevation={2} sx={{ 
-            borderRadius: 3,
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.5 }}
+          >
+          <Paper elevation={0} sx={{ 
+            borderRadius: 4,
             backgroundColor: 'background.paper',
-            boxShadow: 3,
+            overflow: 'hidden',
+            transition: 'all 0.3s ease',
           }}>
             <Box sx={{ 
               display: 'flex', 
               justifyContent: 'space-between', 
               alignItems: 'center',
-              padding: 2,
-              borderBottom: translationExpanded ? '1px solid rgba(255, 255, 255, 0.12)' : 'none'
-            }}>
-              <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                Translation
+              padding: 2.5,
+              background: translationExpanded 
+                ? 'linear-gradient(90deg, rgba(124, 58, 237, 0.05) 0%, rgba(6, 182, 212, 0.05) 100%)'
+                : 'transparent',
+              borderBottom: translationExpanded ? '1px solid rgba(124, 58, 237, 0.15)' : 'none',
+              cursor: 'pointer',
+              '&:hover': {
+                background: 'linear-gradient(90deg, rgba(124, 58, 237, 0.08) 0%, rgba(6, 182, 212, 0.08) 100%)',
+              }
+            }}
+            onClick={toggleTranslation}
+            >
+              <Typography variant="h6" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
+                🌐 Translation
               </Typography>
               <IconButton 
-                onClick={toggleTranslation}
                 sx={{ 
                   color: 'primary.main',
-                  '&:hover': { backgroundColor: 'rgba(144, 202, 249, 0.08)' }
                 }}
               >
                 {translationExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
@@ -386,10 +517,13 @@ const App: React.FC = () => {
                   onNextChapter={handleNextChapter}
                   hasPreviousChapter={hasPreviousChapter}
                   hasNextChapter={hasNextChapter}
+                  currentChapter={currentChapterIndex >= 0 ? currentChapterIndex + 1 : undefined}
+                  totalChapters={chapters.length > 0 ? chapters.length : undefined}
                 />
               </Box>
             </Collapse>
           </Paper>
+          </motion.div>
         </>
       )}
     </Box>

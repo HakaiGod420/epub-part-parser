@@ -149,11 +149,11 @@ const Dictionary: React.FC<DictionaryProps> = ({ bookTitle = "" }) => {
           startIcon={<AddIcon />} 
           onClick={handleClickOpen}
           sx={{
-            backgroundColor: '#4caf50',
+            background: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)',
             color: '#fff',
-            borderRadius: '20px',
+            borderRadius: '12px',
             '&:hover': {
-              backgroundColor: '#45a049',
+              background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
             },
           }}
         >
@@ -164,12 +164,12 @@ const Dictionary: React.FC<DictionaryProps> = ({ bookTitle = "" }) => {
           startIcon={<SaveIcon />} 
           onClick={handleExport}
           sx={{
-            borderColor: '#4caf50',
-            color: '#4caf50',
-            borderRadius: '20px',
+            borderColor: '#7c3aed',
+            color: '#7c3aed',
+            borderRadius: '12px',
             '&:hover': {
-              borderColor: '#45a049',
-              backgroundColor: 'rgba(76, 175, 80, 0.1)',
+              borderColor: '#8b5cf6',
+              backgroundColor: 'rgba(124, 58, 237, 0.1)',
             },
           }}
         >
@@ -188,12 +188,12 @@ const Dictionary: React.FC<DictionaryProps> = ({ bookTitle = "" }) => {
             startIcon={<UploadIcon />} 
             component="span"
             sx={{
-              borderColor: '#666',
-              color: '#fff',
-              borderRadius: '20px',
+              borderColor: 'rgba(124, 58, 237, 0.3)',
+              color: '#a78bfa',
+              borderRadius: '12px',
               '&:hover': {
-                borderColor: '#888',
-                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                borderColor: 'rgba(124, 58, 237, 0.5)',
+                backgroundColor: 'rgba(124, 58, 237, 0.08)',
               },
             }}
           >
@@ -272,11 +272,11 @@ const Dictionary: React.FC<DictionaryProps> = ({ bookTitle = "" }) => {
             onClick={handleSave} 
             variant="contained"
             sx={{
-              backgroundColor: '#4caf50',
+              background: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)',
               color: '#fff',
-              borderRadius: '20px',
+              borderRadius: '12px',
               '&:hover': {
-                backgroundColor: '#45a049',
+                background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
               },
             }}
           >

@@ -71,11 +71,11 @@ import React, { useState, useEffect } from 'react';
            onClick={handleSave}
            variant="contained"
            sx={{
-             backgroundColor: '#4caf50',
+             background: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)',
              color: '#fff',
-             borderRadius: '20px',
+             borderRadius: '12px',
              '&:hover': {
-               backgroundColor: '#45a049',
+               background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
              },
            }}
          >

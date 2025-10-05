@@ -264,7 +264,7 @@ const StorageCleanupModal: React.FC<StorageCleanupModalProps> = ({ open, onClose
                             <Typography variant="body1" fontWeight="medium">
                               {item.label}
                             </Typography>
-                            <Typography variant="caption" sx={{ color: '#4caf50' }}>
+                            <Typography variant="caption" sx={{ color: '#a78bfa', fontWeight: 600 }}>
                               {item.size}
                             </Typography>
                           </Box>

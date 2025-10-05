@@ -62,11 +62,11 @@ const TermsExtractionPopup: React.FC<TermsExtractionPopupProps> = ({
       'Magic/Fantasy Concepts': '#673ab7',
       'Titles & Ranks': '#795548',
     };
-    return colors[category] || '#4caf50';
+    return colors[category] || '#7c3aed';
   };
 
   const getConfidenceColor = (confidence: number): string => {
-    if (confidence >= 9) return '#4caf50'; // High confidence - green
+    if (confidence >= 9) return '#10b981'; // High confidence - success green
     if (confidence >= 7) return '#ff9800'; // Medium confidence - orange
     return '#f44336'; // Lower confidence - red
   };
@@ -101,7 +101,7 @@ const TermsExtractionPopup: React.FC<TermsExtractionPopupProps> = ({
       <DialogContent>
         {isLoading && (
           <Box display="flex" flexDirection="column" alignItems="center" py={4}>
-            <CircularProgress sx={{ color: '#4caf50', mb: 2 }} />
+            <CircularProgress sx={{ color: '#10b981', mb: 2 }} />
             <Typography>Extracting terms from translated text...</Typography>
           </Box>
         )}
@@ -182,13 +182,13 @@ const TermsExtractionPopup: React.FC<TermsExtractionPopupProps> = ({
                       <ListItemSecondaryAction>
                         {isAdded ? (
                           <IconButton disabled>
-                            <CheckCircleIcon sx={{ color: '#4caf50' }} />
+                            <CheckCircleIcon sx={{ color: '#10b981' }} />
                           </IconButton>
                         ) : (
                           <IconButton
                             onClick={() => handleAddTerm(term)}
                             sx={{
-                              color: '#4caf50',
+                              color: '#10b981',
                               '&:hover': {
                                 backgroundColor: 'rgba(76, 175, 80, 0.1)',
                               },
@@ -211,7 +211,7 @@ const TermsExtractionPopup: React.FC<TermsExtractionPopupProps> = ({
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={handleClose} sx={{ color: '#4caf50' }}>
+        <Button onClick={handleClose} sx={{ color: '#10b981' }}>
           Close
         </Button>
       </DialogActions>
@@ -220,3 +220,4 @@ const TermsExtractionPopup: React.FC<TermsExtractionPopupProps> = ({
 };
 
 export default TermsExtractionPopup;
+

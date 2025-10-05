@@ -295,10 +295,10 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content, chapterTitle
                 }
               }}
               sx={{
-                backgroundColor: '#4caf50',
+                background: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)',
                 color: '#fff',
                 '&:hover': {
-                  backgroundColor: '#45a049',
+                  background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
                 },
               }}
             >
@@ -313,9 +313,9 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content, chapterTitle
                   <IconButton 
                     onClick={() => handleEditOpen(index)} 
                     sx={{
-                      color: '#4caf50',
+                      color: '#7c3aed',
                       '&:hover': {
-                        backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                        backgroundColor: 'rgba(124, 58, 237, 0.1)',
                       },
                     }}
                   >
@@ -346,9 +346,9 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content, chapterTitle
                       '& .MuiSwitch-switchBase': {
                         color: '#bdbdbd',
                         '&.Mui-checked': {
-                          color: '#4caf50',
+                          color: '#7c3aed',
                           '& + .MuiSwitch-track': {
-                            backgroundColor: '#4caf50',
+                            backgroundColor: '#7c3aed',
                             opacity: 0.6,
                           },
                         },
@@ -386,9 +386,9 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content, chapterTitle
               '& .MuiSwitch-switchBase': {
                 color: '#bdbdbd',
                 '&.Mui-checked': {
-                  color: '#4caf50',
+                  color: '#7c3aed',
                   '& + .MuiSwitch-track': {
-                    backgroundColor: '#4caf50',
+                    backgroundColor: '#7c3aed',
                     opacity: 0.6,
                   },
                 },
@@ -413,9 +413,9 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content, chapterTitle
               '& .MuiSwitch-switchBase': {
                 color: '#bdbdbd',
                 '&.Mui-checked': {
-                  color: '#4caf50',
+                  color: '#7c3aed',
                   '& + .MuiSwitch-track': {
-                    backgroundColor: '#4caf50',
+                    backgroundColor: '#7c3aed',
                     opacity: 0.6,
                   },
                 },
@@ -437,11 +437,11 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content, chapterTitle
           margin: "20px auto", 
           padding: "10px 20px", 
           display: "block", 
-          borderRadius: "20px",
-          backgroundColor: '#4caf50',
+          borderRadius: "12px",
+          background: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)',
           color: '#fff',
           '&:hover': {
-            backgroundColor: '#45a049',
+            background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
           },
         }}
       >
@@ -475,13 +475,13 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content, chapterTitle
             marginTop: 2,
             display: "block",
             width: "100%",
-            borderRadius: "20px",
-            backgroundColor: copiedParts.has(index) ? "#4caf50" : "transparent",
+            borderRadius: "12px",
+            background: copiedParts.has(index) ? "linear-gradient(135deg, #10b981 0%, #34d399 100%)" : "transparent",
             color: copiedParts.has(index) ? "#fff" : "#fff",
-            borderColor: copiedParts.has(index) ? "#4caf50" : "#666",
+            borderColor: copiedParts.has(index) ? "#10b981" : "rgba(124, 58, 237, 0.3)",
             "&:hover": {
-              backgroundColor: copiedParts.has(index) ? "#45a049" : "rgba(255, 255, 255, 0.08)",
-              borderColor: copiedParts.has(index) ? "#45a049" : "#888",
+              background: copiedParts.has(index) ? "linear-gradient(135deg, #059669 0%, #10b981 100%)" : "rgba(124, 58, 237, 0.08)",
+              borderColor: copiedParts.has(index) ? "#059669" : "rgba(124, 58, 237, 0.5)",
             },
           }}
           startIcon={copiedParts.has(index) ? <CheckIcon /> : undefined}

@@ -207,14 +207,14 @@ const ChapterSelector: React.FC<ChapterSelectorProps> = ({
           disabled={currentChapterIndex === 0}
           sx={{
             textTransform: "none",
-            backgroundColor: '#4caf50',
+            background: 'linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%)',
             color: '#fff',
-            borderRadius: '20px',
+            borderRadius: '12px',
             '&:hover': {
-              backgroundColor: '#45a049',
+              background: 'linear-gradient(135deg, #6d28d9 0%, #8b5cf6 100%)',
             },
             '&:disabled': {
-              backgroundColor: '#424242',
+              background: '#424242',
               color: '#666',
             },
           }}
@@ -227,14 +227,14 @@ const ChapterSelector: React.FC<ChapterSelectorProps> = ({
           disabled={currentChapterIndex === chapters.length - 1}
           sx={{
             textTransform: "none",
-            backgroundColor: '#4caf50',
+            background: 'linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%)',
             color: '#fff',
-            borderRadius: '20px',
+            borderRadius: '12px',
             '&:hover': {
-              backgroundColor: '#45a049',
+              background: 'linear-gradient(135deg, #6d28d9 0%, #8b5cf6 100%)',
             },
             '&:disabled': {
-              backgroundColor: '#424242',
+              background: '#424242',
               color: '#666',
             },
           }}

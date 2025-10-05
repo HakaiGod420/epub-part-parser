@@ -98,12 +98,12 @@ const ChapterContent: React.FC<ChapterContentProps> = ({ content, images, chapte
               variant="outlined" 
               onClick={handleToggleImages}
               sx={{
-                color: '#9c27b0',
-                borderColor: '#9c27b0',
-                borderRadius: '20px',
+                color: '#a78bfa',
+                borderColor: 'rgba(124, 58, 237, 0.4)',
+                borderRadius: '12px',
                 '&:hover': {
-                  backgroundColor: 'rgba(156, 39, 176, 0.1)',
-                  borderColor: '#7b1fa2',
+                  backgroundColor: 'rgba(124, 58, 237, 0.1)',
+                  borderColor: 'rgba(124, 58, 237, 0.6)',
                 },
               }}
             >
@@ -120,7 +120,7 @@ const ChapterContent: React.FC<ChapterContentProps> = ({ content, images, chapte
         )}
 
         {/* Chapter Content */}
-        <Typography variant="h5" gutterBottom sx={{ color: '#4caf50', fontWeight: 'bold' }}>
+        <Typography variant="h5" gutterBottom sx={{ color: '#a78bfa', fontWeight: 'bold' }}>
           Chapter Content:
         </Typography>
         <Box
@@ -145,11 +145,11 @@ const ChapterContent: React.FC<ChapterContentProps> = ({ content, images, chapte
               variant="contained" 
               onClick={handleToggleContent}
               sx={{
-                backgroundColor: '#4caf50',
+                background: 'linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%)',
                 color: '#fff',
-                borderRadius: '20px',
+                borderRadius: '12px',
                 '&:hover': {
-                  backgroundColor: '#45a049',
+                  background: 'linear-gradient(135deg, #6d28d9 0%, #8b5cf6 100%)',
                 },
               }}
             >

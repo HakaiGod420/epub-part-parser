@@ -246,7 +246,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 1 }}>
           {/* Translation Provider Selection */}
           <Box sx={{ border: '1px solid #444', borderRadius: 1, p: 2, backgroundColor: '#333' }}>
-            <Typography variant="h6" sx={{ color: '#4caf50', mb: 2 }}>
+            <Typography variant="h6" sx={{ color: '#7c3aed', mb: 2 }}>
               Translation Provider
             </Typography>
             <FormControl fullWidth>
@@ -332,11 +332,11 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
                   sx={{
                     minWidth: 150,
                     height: 56,
-                    borderColor: '#4caf50',
-                    color: '#4caf50',
+                    bordercolor: '#7c3aed',
+                    color: '#7c3aed',
                     '&:hover': {
                       backgroundColor: 'rgba(76, 175, 80, 0.1)',
-                      borderColor: '#4caf50',
+                      bordercolor: '#7c3aed',
                     },
                   }}
                 >
@@ -406,7 +406,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
 
           {/* AI Configuration Settings */}
           <Box sx={{ border: '1px solid #444', borderRadius: 1, p: 2, backgroundColor: '#333' }}>
-            <Typography variant="h6" sx={{ color: '#4caf50', mb: 2 }}>
+            <Typography variant="h6" sx={{ color: '#7c3aed', mb: 2 }}>
               AI Configuration
             </Typography>
             <Typography variant="body2" sx={{ color: '#b0b0b0', mb: 2 }}>
@@ -494,7 +494,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
 
           {/* Translation Context Settings */}
           <Box sx={{ border: '1px solid #444', borderRadius: 1, p: 2, backgroundColor: '#333' }}>
-            <Typography variant="h6" sx={{ color: '#4caf50', mb: 2 }}>
+            <Typography variant="h6" sx={{ color: '#7c3aed', mb: 2 }}>
               Translation Context Settings
             </Typography>
             <Typography variant="body2" sx={{ color: '#b0b0b0', mb: 2 }}>
@@ -512,10 +512,10 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
                     }))}
                     sx={{
                       '& .MuiSwitch-switchBase.Mui-checked': {
-                        color: '#4caf50',
+                        color: '#7c3aed',
                       },
                       '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                        backgroundColor: '#4caf50',
+                        backgroundcolor: '#7c3aed',
                       },
                     }}
                   />
@@ -540,10 +540,10 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
                     }))}
                     sx={{
                       '& .MuiSwitch-switchBase.Mui-checked': {
-                        color: '#4caf50',
+                        color: '#7c3aed',
                       },
                       '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                        backgroundColor: '#4caf50',
+                        backgroundcolor: '#7c3aed',
                       },
                     }}
                   />
@@ -568,10 +568,10 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
                     }))}
                     sx={{
                       '& .MuiSwitch-switchBase.Mui-checked': {
-                        color: '#4caf50',
+                        color: '#7c3aed',
                       },
                       '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                        backgroundColor: '#4caf50',
+                        backgroundcolor: '#7c3aed',
                       },
                     }}
                   />
@@ -660,10 +660,10 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
                           }))}
                           sx={{
                             '& .MuiSwitch-switchBase.Mui-checked': {
-                              color: '#4caf50',
+                              color: '#7c3aed',
                             },
                             '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                              backgroundColor: '#4caf50',
+                              backgroundcolor: '#7c3aed',
                             },
                           }}
                         />
@@ -681,10 +681,10 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
                           }))}
                           sx={{
                             '& .MuiSwitch-switchBase.Mui-checked': {
-                              color: '#4caf50',
+                              color: '#7c3aed',
                             },
                             '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                              backgroundColor: '#4caf50',
+                              backgroundcolor: '#7c3aed',
                             },
                           }}
                         />
@@ -702,10 +702,10 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
                           }))}
                           sx={{
                             '& .MuiSwitch-switchBase.Mui-checked': {
-                              color: '#4caf50',
+                              color: '#7c3aed',
                             },
                             '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                              backgroundColor: '#4caf50',
+                              backgroundcolor: '#7c3aed',
                             },
                           }}
                         />
@@ -723,10 +723,10 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
                           }))}
                           sx={{
                             '& .MuiSwitch-switchBase.Mui-checked': {
-                              color: '#4caf50',
+                              color: '#7c3aed',
                             },
                             '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                              backgroundColor: '#4caf50',
+                              backgroundcolor: '#7c3aed',
                             },
                           }}
                         />
@@ -744,10 +744,10 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
                           }))}
                           sx={{
                             '& .MuiSwitch-switchBase.Mui-checked': {
-                              color: '#4caf50',
+                              color: '#7c3aed',
                             },
                             '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                              backgroundColor: '#4caf50',
+                              backgroundcolor: '#7c3aed',
                             },
                           }}
                         />
@@ -765,10 +765,10 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
                           }))}
                           sx={{
                             '& .MuiSwitch-switchBase.Mui-checked': {
-                              color: '#4caf50',
+                              color: '#7c3aed',
                             },
                             '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                              backgroundColor: '#4caf50',
+                              backgroundcolor: '#7c3aed',
                             },
                           }}
                         />
@@ -779,8 +779,8 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
                 </Box>
 
                 {/* Info about the extractor */}
-                <Box sx={{ p: 2, backgroundColor: '#2d4a3a', borderRadius: 1, border: '1px solid #4caf50' }}>
-                  <Typography variant="body2" color="#4caf50">
+                <Box sx={{ p: 2, backgroundColor: 'rgba(124, 58, 237, 0.1)', borderRadius: 2, border: '1px solid rgba(124, 58, 237, 0.3)' }}>
+                  <Typography variant="body2" sx={{ color: '#a78bfa' }}>
                     <strong>How it works:</strong> After translating text, click "Extract Terms" to automatically identify and extract important dictionary terms using AI. You can then review and add selected terms to your dictionary.
                   </Typography>
                 </Box>
@@ -805,7 +805,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
                     size="small" 
                     onClick={handleResetInstruction}
                     sx={{
-                      color: '#4caf50',
+                      color: '#7c3aed',
                       '&:hover': {
                         backgroundColor: 'rgba(76, 175, 80, 0.1)',
                       },
@@ -835,8 +835,8 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
           </Accordion>
 
           {/* Info */}
-          <Box sx={{ p: 2, backgroundColor: '#2d4a3a', borderRadius: 1, border: '1px solid #4caf50' }}>
-            <Typography variant="body2" color="#4caf50">
+          <Box sx={{ p: 2, backgroundColor: 'rgba(124, 58, 237, 0.1)', borderRadius: 2, border: '1px solid rgba(124, 58, 237, 0.3)' }}>
+            <Typography variant="body2" sx={{ color: '#a78bfa' }}>
               <strong>Note:</strong> Your API key and settings are stored locally in your browser. 
               The API key is required to use the translation feature.
             </Typography>
@@ -860,9 +860,9 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
           onClick={handleSave} 
           variant="contained"
           sx={{
-            backgroundColor: '#4caf50',
+            background: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)',
             '&:hover': {
-              backgroundColor: '#45a049',
+              background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
             },
           }}
         >
@@ -874,3 +874,4 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
 };
 
 export default SettingsDialog;
+
