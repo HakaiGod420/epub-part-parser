@@ -512,6 +512,7 @@ const App: React.FC = () => {
                 <TranslationComponent 
                   text={stripHtml(chapterContent)} 
                   chapterTitle={currentTitle || undefined}
+                  images={images}
                   bookTitle={bookTitle}
                   onPreviousChapter={handlePreviousChapter}
                   onNextChapter={handleNextChapter}

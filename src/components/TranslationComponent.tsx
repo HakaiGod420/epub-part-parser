@@ -18,6 +18,7 @@ interface TranslationComponentProps {
   text: string;
   chapterTitle?: string;
   bookTitle?: string;
+  images: Uint8Array[];  // images from chapter to indicate presence in modal
   // Navigation props
   onPreviousChapter?: () => void;
   onNextChapter?: () => void;
@@ -31,6 +32,7 @@ interface TranslationComponentProps {
 const TranslationComponent: React.FC<TranslationComponentProps> = ({ 
   text, 
   chapterTitle, 
+  images,
   bookTitle,
   onPreviousChapter,
   onNextChapter,
@@ -187,6 +189,7 @@ const TranslationComponent: React.FC<TranslationComponentProps> = ({
         onClose={handleCloseModal}
         text={contextualText}
         chapterTitle={chapterTitle}
+        images={images}
         onPreviousChapter={onPreviousChapter}
         onNextChapter={onNextChapter}
         hasPreviousChapter={hasPreviousChapter}

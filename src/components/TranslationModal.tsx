@@ -11,6 +11,7 @@ import {
   Alert,
   Fade,
   IconButton,
+  Tooltip,
   FormControl,
   Select,
   MenuItem,
@@ -46,6 +47,7 @@ import {
   AutoAwesome as ExtractIcon,
   ArrowBack as ArrowBackIcon,
   ArrowForward as ArrowForwardIcon,
+  Info as InfoIcon,
 } from '@mui/icons-material';
 import { translationService, GEMINI_MODELS, TranslationProvider } from '../utils/translationService';
 import { openRouterService, OpenRouterModel } from '../utils/openRouterService';
@@ -67,6 +69,7 @@ interface TranslationModalProps {
   // Chapter progress props
   currentChapter?: number;
   totalChapters?: number;
+  images: Uint8Array[]; // images from chapter to show indicator if exist
 }
 
 interface ModalSettings {
@@ -187,10 +190,11 @@ const TabPanel = React.memo(({ children, value, index }: any) => (
 ));
 
 const TranslationModal: React.FC<TranslationModalProps> = ({ 
-  open, 
-  onClose, 
-  text, 
+  open,
+  onClose,
+  text,
   chapterTitle,
+  images,
   onPreviousChapter,
   onNextChapter,
   hasPreviousChapter = false,
@@ -632,6 +636,25 @@ const TranslationModal: React.FC<TranslationModalProps> = ({
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <TranslateIcon sx={{ color: currentTheme.accent }} />
+          {images.length > 0 && (
+            <Tooltip title="This chapter contains images">
+              <InfoIcon 
+                sx={{ 
+                  color: '#f59e0b', // Amber/orange color
+                  fontSize: '1.8rem', // Much larger
+                  backgroundColor: 'rgba(245, 158, 11, 0.1)', // Subtle background
+                  borderRadius: '50%',
+                  padding: '6px',
+                  border: '1px solid rgba(245, 158, 11, 0.3)',
+                  '&:hover': {
+                    backgroundColor: 'rgba(245, 158, 11, 0.2)',
+                    transform: 'scale(1.1)',
+                  },
+                  transition: 'all 0.2s ease',
+                }} 
+              />
+            </Tooltip>
+          )}
           <Typography variant="h5" sx={{ fontWeight: 'bold', color: currentTheme.text }}>
             Translation Reader
           </Typography>

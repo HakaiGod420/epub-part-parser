@@ -65,7 +65,7 @@ export class DeepSeekService {
     this.client = new OpenAI({
       baseURL: this.settings.baseUrl,
       apiKey: this.settings.apiKey,
-      dangerouslyAllowBrowser: true, // Acknowledging browser environment risks
+      dangerouslyAllowBrowser: true, 
     });
 
     return this.client;
