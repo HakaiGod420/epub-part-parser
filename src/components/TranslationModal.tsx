@@ -49,6 +49,7 @@ import {
 } from '@mui/icons-material';
 import { translationService, GEMINI_MODELS, TranslationProvider } from '../utils/translationService';
 import { openRouterService, OpenRouterModel } from '../utils/openRouterService';
+import { DEEPSEEK_MODELS, deepSeekService } from '../utils/deepSeekService';
 import { dictionaryExtractorService, ExtractedTerm } from '../utils/dictionaryExtractorService';
 import { dictionaryEventManager } from '../utils/dictionaryEventManager';
 import TermsExtractionPopup from './TermsExtractionPopup';
@@ -398,6 +399,12 @@ const TranslationModal: React.FC<TranslationModalProps> = ({
         const orSettings = openRouterService.getSettings();
         if (orSettings) {
           openRouterService.saveSettings({ ...orSettings, model: newModel });
+        }
+      } else if (currentProvider === 'deepseek') {
+        // Update DeepSeek service as well
+        const dsSettings = deepSeekService.getSettings();
+        if (dsSettings) {
+          deepSeekService.saveSettings({ ...dsSettings, model: newModel });
         }
       }
       
@@ -1082,57 +1089,58 @@ const TranslationModal: React.FC<TranslationModalProps> = ({
                   </ListItemIcon>
                   <ListItemText 
                     primary="Translation Provider"
-                    secondary="Choose between Google Gemini or OpenRouter"
+                    secondary="Choose between Google Gemini, OpenRouter or DeepSeek"
                     primaryTypographyProps={{ color: currentTheme.text }}
                     secondaryTypographyProps={{ color: currentTheme.secondary }}
                     sx={{ flexGrow: 1 }}
                   />
                   <FormControl sx={{ width: 200, ml: 2 }}>
-                    <Select
-                      value={currentProvider}
-                      onChange={(e) => handleProviderChange(e.target.value as TranslationProvider)}
-                      size="small"
-                      sx={{
+              <Select
+                value={currentProvider}
+                onChange={(e) => handleProviderChange(e.target.value as TranslationProvider)}
+                size="small"
+                sx={{
+                  color: currentTheme.text,
+                  backgroundColor: currentTheme.background,
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: currentTheme.border,
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: currentTheme.accent,
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: currentTheme.accent,
+                  },
+                  '& .MuiSelect-icon': {
+                    color: currentTheme.text,
+                  },
+                }}
+                MenuProps={{
+                  PaperProps: {
+                    sx: {
+                      backgroundColor: currentTheme.paper,
+                      color: currentTheme.text,
+                      border: `1px solid ${currentTheme.border}`,
+                      '& .MuiMenuItem-root': {
                         color: currentTheme.text,
-                        backgroundColor: currentTheme.background,
-                        '& .MuiOutlinedInput-notchedOutline': {
-                          borderColor: currentTheme.border,
+                        '&:hover': {
+                          backgroundColor: `${currentTheme.accent}30`,
                         },
-                        '&:hover .MuiOutlinedInput-notchedOutline': {
-                          borderColor: currentTheme.accent,
-                        },
-                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                          borderColor: currentTheme.accent,
-                        },
-                        '& .MuiSelect-icon': {
-                          color: currentTheme.text,
-                        },
-                      }}
-                      MenuProps={{
-                        PaperProps: {
-                          sx: {
-                            backgroundColor: currentTheme.paper,
-                            color: currentTheme.text,
-                            border: `1px solid ${currentTheme.border}`,
-                            '& .MuiMenuItem-root': {
-                              color: currentTheme.text,
-                              '&:hover': {
-                                backgroundColor: `${currentTheme.accent}30`,
-                              },
-                              '&.Mui-selected': {
-                                backgroundColor: `${currentTheme.accent}40`,
-                                '&:hover': {
-                                  backgroundColor: `${currentTheme.accent}50`,
-                                },
-                              },
-                            },
+                        '&.Mui-selected': {
+                          backgroundColor: `${currentTheme.accent}40`,
+                          '&:hover': {
+                            backgroundColor: `${currentTheme.accent}50`,
                           },
                         },
-                      }}
-                    >
-                      <MenuItem value="google">Google Gemini</MenuItem>
-                      <MenuItem value="openrouter">OpenRouter</MenuItem>
-                    </Select>
+                      },
+                    },
+                  },
+                }}
+              >
+                <MenuItem value="google">Google Gemini</MenuItem>
+                <MenuItem value="openrouter">OpenRouter</MenuItem>
+                <MenuItem value="deepseek">DeepSeek</MenuItem>
+              </Select>
                   </FormControl>
                 </ListItem>
 
@@ -1143,9 +1151,9 @@ const TranslationModal: React.FC<TranslationModalProps> = ({
                   <ListItemIcon sx={{ minWidth: 40 }}>
                     <TranslateIcon sx={{ color: currentTheme.accent }} />
                   </ListItemIcon>
-                  <ListItemText 
-                    primary={currentProvider === 'google' ? 'Gemini Model' : 'OpenRouter Model'}
-                    secondary={`Select the ${currentProvider === 'google' ? 'Gemini' : 'OpenRouter'} model for translation`}
+                  <ListItemText
+                    primary={currentProvider === 'google' ? 'Gemini Model' : currentProvider === 'deepseek' ? 'DeepSeek Model' : 'OpenRouter Model'}
+                    secondary={`Select the ${currentProvider === 'google' ? 'Gemini' : currentProvider === 'deepseek' ? 'DeepSeek' : 'OpenRouter'} model for translation`}
                     primaryTypographyProps={{ color: currentTheme.text }}
                     secondaryTypographyProps={{ color: currentTheme.secondary }}
                     sx={{ flexGrow: 1 }}
@@ -1198,8 +1206,14 @@ const TranslationModal: React.FC<TranslationModalProps> = ({
                       <MenuItem value="" disabled sx={{ color: currentTheme.secondary }}>
                         Select Model
                       </MenuItem>
-                      {currentProvider === 'google' 
+                      {currentProvider === 'google'
                         ? GEMINI_MODELS.map((model) => (
+                            <MenuItem key={model} value={model}>
+                              {model}
+                            </MenuItem>
+                          ))
+                        : currentProvider === 'deepseek'
+                        ? DEEPSEEK_MODELS.map((model) => (
                             <MenuItem key={model} value={model}>
                               {model}
                             </MenuItem>
@@ -1221,11 +1235,11 @@ const TranslationModal: React.FC<TranslationModalProps> = ({
 
                 {/* Provider Status */}
                 <ListItem sx={{ px: 0, py: 1 }}>
-                  <ListItemText 
+                  <ListItemText
                     primary={
                       <Typography variant="body2" sx={{ color: currentTheme.secondary }}>
-                        Status: {translationService.isConfigured() 
-                          ? `${currentProvider === 'google' ? 'Google Gemini' : 'OpenRouter'} configured ✓` 
+                        Status: {translationService.isConfigured()
+                          ? `${currentProvider === 'google' ? 'Google Gemini' : currentProvider === 'deepseek' ? 'DeepSeek' : 'OpenRouter'} configured ✓`
                           : 'Not configured - please check settings'}
                       </Typography>
                     }

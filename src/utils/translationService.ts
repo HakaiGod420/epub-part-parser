@@ -1,8 +1,9 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { loadTranslationContextSettings } from './chapterContext';
 import { openRouterService, OpenRouterSettings } from './openRouterService';
+import { deepSeekService, DeepSeekSettings } from './deepSeekService';
 
-export type TranslationProvider = 'google' | 'openrouter';
+export type TranslationProvider = 'google' | 'openrouter' | 'deepseek';
 
 export interface AIConfig {
   topP?: number;
@@ -23,6 +24,7 @@ export interface TranslationProviderSettings {
   currentProvider: TranslationProvider;
   googleSettings: TranslationSettings;
   openRouterSettings: OpenRouterSettings;
+  deepSeekSettings: DeepSeekSettings;
 }
 
 export const GEMINI_MODELS = [
@@ -202,6 +204,11 @@ export class TranslationService {
             baseUrl: 'https://openrouter.ai/api/v1',
             siteUrl: 'https://epub-parser.local',
             siteName: 'EPUB Parser'
+          },
+          deepSeekSettings: {
+            apiKey: '',
+            model: 'deepseek-chat',
+            baseUrl: 'https://api.deepseek.com'
           }
         };
         
@@ -215,7 +222,7 @@ export class TranslationService {
 
   private updateCurrentSettings(): void {
     if (!this.providerSettings) return;
-    
+
     if (this.providerSettings.currentProvider === 'google') {
       this.settings = this.providerSettings.googleSettings;
       if (this.settings?.apiKey) {
@@ -232,6 +239,17 @@ export class TranslationService {
         aiConfig: DEFAULT_AI_CONFIG
       };
       openRouterService.saveSettings(orSettings);
+    } else if (this.providerSettings.currentProvider === 'deepseek') {
+      // Convert DeepSeek settings to TranslationSettings format for compatibility
+      const dsSettings = this.providerSettings.deepSeekSettings;
+      this.settings = {
+        provider: 'deepseek',
+        apiKey: dsSettings.apiKey,
+        model: dsSettings.model,
+        systemInstruction: DEFAULT_SYSTEM_INSTRUCTION,
+        aiConfig: DEFAULT_AI_CONFIG
+      };
+      deepSeekService.saveSettings(dsSettings);
     }
   }
 
@@ -252,6 +270,11 @@ export class TranslationService {
           baseUrl: 'https://openrouter.ai/api/v1',
           siteUrl: 'https://epub-parser.local',
           siteName: 'EPUB Parser'
+        },
+        deepSeekSettings: {
+          apiKey: '',
+          model: 'deepseek-chat',
+          baseUrl: 'https://api.deepseek.com'
         }
       };
     }
@@ -270,6 +293,15 @@ export class TranslationService {
       };
       this.providerSettings.openRouterSettings = orSettings;
       openRouterService.saveSettings(orSettings);
+    } else if (settings.provider === 'deepseek') {
+      // Update DeepSeek settings
+      const dsSettings = {
+        apiKey: settings.apiKey,
+        model: settings.model,
+        baseUrl: 'https://api.deepseek.com'
+      };
+      this.providerSettings.deepSeekSettings = dsSettings;
+      deepSeekService.saveSettings(dsSettings);
     }
 
     this.providerSettings.currentProvider = settings.provider || 'google';
@@ -307,6 +339,8 @@ export class TranslationService {
       return !!(this.settings?.apiKey && this.settings?.model);
     } else if (provider === 'openrouter') {
       return openRouterService.isConfigured();
+    } else if (provider === 'deepseek') {
+      return deepSeekService.isConfigured();
     }
     return false;
   }
@@ -366,6 +400,13 @@ export class TranslationService {
         console.error('OpenRouter translation error:', error);
         throw error;
       }
+    } else if (provider === 'deepseek') {
+      try {
+        return await deepSeekService.translateText(text, this.buildSystemInstruction());
+      } catch (error) {
+        console.error('DeepSeek translation error:', error);
+        throw error;
+      }
     } else {
       throw new Error('Translation service not configured. Please set up API key and model in settings.');
     }
@@ -418,6 +459,13 @@ export class TranslationService {
         await openRouterService.translateTextStream(text, this.buildSystemInstruction(), onChunk);
       } catch (error) {
         console.error('OpenRouter translation error:', error);
+        throw error;
+      }
+    } else if (provider === 'deepseek') {
+      try {
+        await deepSeekService.translateTextStream(text, this.buildSystemInstruction(), onChunk);
+      } catch (error) {
+        console.error('DeepSeek translation error:', error);
         throw error;
       }
     } else {

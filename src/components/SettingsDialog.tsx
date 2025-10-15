@@ -24,6 +24,7 @@ import {
 } from '@mui/icons-material';
 import { TranslationSettings, GEMINI_MODELS, DEFAULT_SYSTEM_INSTRUCTION, DEFAULT_AI_CONFIG, translationService, TranslationProvider } from '../utils/translationService';
 import { openRouterService, OpenRouterModel } from '../utils/openRouterService';
+import { DEEPSEEK_MODELS, deepSeekService } from '../utils/deepSeekService';
 import { 
   TranslationContextSettings, 
   loadTranslationContextSettings, 
@@ -56,6 +57,9 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
   const [isLoadingModels, setIsLoadingModels] = useState(false);
   const [modelError, setModelError] = useState<string | null>(null);
 
+  const [deepSeekApiKey, setDeepSeekApiKey] = useState('');
+  const [deepSeekModel, setDeepSeekModel] = useState('deepseek-chat');
+
   const [contextSettings, setContextSettings] = useState<TranslationContextSettings>({
     includeDictionary: true,
     includeChapterTitle: false,
@@ -82,6 +86,11 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
       if (providerSettings?.openRouterSettings) {
         setOpenRouterApiKey(providerSettings.openRouterSettings.apiKey || '');
         setOpenRouterModel(providerSettings.openRouterSettings.model || '');
+      }
+
+      if (providerSettings?.deepSeekSettings) {
+        setDeepSeekApiKey(providerSettings.deepSeekSettings.apiKey || '');
+        setDeepSeekModel(providerSettings.deepSeekSettings.model || 'deepseek-chat');
       }
       
       const currentContextSettings = loadTranslationContextSettings();
@@ -196,6 +205,33 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
         systemInstruction: settings.systemInstruction,
         aiConfig: DEFAULT_AI_CONFIG // OpenRouter doesn't use Google's AI config
       });
+    } else if (currentProvider === 'deepseek') {
+      if (!deepSeekApiKey.trim()) {
+        alert('Please enter a valid DeepSeek API key');
+        return;
+      }
+      if (!deepSeekModel.trim()) {
+        alert('Please select a DeepSeek model');
+        return;
+      }
+      
+      // Save DeepSeek settings
+      const deepSeekSettings = {
+        apiKey: deepSeekApiKey,
+        model: deepSeekModel,
+        baseUrl: 'https://api.deepseek.com'
+      };
+      
+      deepSeekService.saveSettings(deepSeekSettings);
+      
+      // Save as translation settings for compatibility
+      translationService.saveSettings({
+        provider: 'deepseek',
+        apiKey: deepSeekApiKey,
+        model: deepSeekModel,
+        systemInstruction: settings.systemInstruction,
+        aiConfig: DEFAULT_AI_CONFIG // DeepSeek doesn't use Google's AI config
+      });
     }
 
     saveTranslationContextSettings(contextSettings);
@@ -206,6 +242,8 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
   const handleCancel = () => {
     // Reset to current settings
     const currentSettings = translationService.getSettings();
+    const providerSettings = translationService.getProviderSettings();
+    
     if (currentSettings) {
       setSettings(currentSettings);
     } else {
@@ -216,6 +254,18 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
         systemInstruction: DEFAULT_SYSTEM_INSTRUCTION,
         aiConfig: DEFAULT_AI_CONFIG,
       });
+    }
+
+    // Reset OpenRouter settings
+    if (providerSettings?.openRouterSettings) {
+      setOpenRouterApiKey(providerSettings.openRouterSettings.apiKey || '');
+      setOpenRouterModel(providerSettings.openRouterSettings.model || '');
+    }
+
+    // Reset DeepSeek settings
+    if (providerSettings?.deepSeekSettings) {
+      setDeepSeekApiKey(providerSettings.deepSeekSettings.apiKey || '');
+      setDeepSeekModel(providerSettings.deepSeekSettings.model || 'deepseek-chat');
     }
     
     const currentContextSettings = loadTranslationContextSettings();
@@ -261,6 +311,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
               >
                 <MenuItem value="google">Google Gemini</MenuItem>
                 <MenuItem value="openrouter">OpenRouter</MenuItem>
+                <MenuItem value="deepseek">DeepSeek</MenuItem>
               </Select>
             </FormControl>
           </Box>
@@ -402,7 +453,47 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
             </>
           )}
 
+          {/* DeepSeek API Settings */}
+          {currentProvider === 'deepseek' && (
+            <>
+              <TextField
+                label="DeepSeek API Key"
+                type="password"
+                value={deepSeekApiKey}
+                onChange={(e) => setDeepSeekApiKey(e.target.value)}
+                fullWidth
+                required
+                helperText="Get your API key from DeepSeek"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: '#424242',
+                  }
+                }}
+              />
 
+              <FormControl fullWidth>
+                <InputLabel>DeepSeek Model</InputLabel>
+                <Select
+                  value={deepSeekModel}
+                  label="DeepSeek Model"
+                  onChange={(e) => setDeepSeekModel(e.target.value)}
+                  sx={{
+                    backgroundColor: '#424242',
+                  }}
+                >
+                  {DEEPSEEK_MODELS.map((model) => (
+                    <MenuItem key={model} value={model}>
+                      {model}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <Typography variant="body2" sx={{ color: '#b0b0b0' }}>
+                DeepSeek offers high-quality AI models. The system instruction for Google API will be reused with DeepSeek.
+              </Typography>
+            </>
+          )}
 
           {/* AI Configuration Settings */}
           <Box sx={{ border: '1px solid #444', borderRadius: 1, p: 2, backgroundColor: '#333' }}>
@@ -874,4 +965,3 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
 };
 
 export default SettingsDialog;
-
