@@ -32,9 +32,13 @@ export interface DictionaryExtractorSettings {
 
 export interface ExtractedTerm {
   term: string;
-  explanation: string;
+  explanation: string; // Short 1-sentence description
   category: string;
   confidence: number;
+  longDescription?: string; // Extended detailed description (1-10 sentences)
+  gender?: string; // For characters: male, female, other
+  isUpdate?: boolean; // True if this is an update suggestion for existing term
+  existingLongDescription?: string; // Current long description if updating
 }
 
 export interface ExtractionResponse {
@@ -84,20 +88,26 @@ For each extracted term, provide:
 
 The exact term as it appears in the text
 
-A very simple, 1-5 word explanation suitable for a dictionary
+A SHORT description (2-4 words): MINIMAL identifier only! For characters: just gender and role/trait (e.g., "female elf", "male protagonist"). For places: just type (e.g., "ancient city", "magic academy"). For concepts: just category (e.g., "fire magic", "royal title").
+
+A LONG description (1-10 sentences): Rich, detailed, immersive description for creative reference. Include appearance, personality, backstory, significance, or contextual details that bring the element to life.
 
 The category it belongs to
 
 A confidence score (1-10) indicating how important/relevant this term is
+
+Gender (for characters only): male, female, other, or unknown
 
 Return your response in the following JSON format:
 {
 "terms": [
 {
 "term": "Exact term from text",
-"explanation": "Clear, concise explanation",
+"explanation": "female elf",
+"longDescription": "Detailed 1-10 sentence description with vivid context and details",
 "category": "Category name",
-"confidence": 8
+"confidence": 8,
+"gender": "male|female|other|unknown"
 }
 ]
 }
@@ -106,15 +116,17 @@ Guidelines:
 
 Only extract proper character names. Do not extract generic family titles or roles (e.g., 'mother,' 'brother').
 
-For character names, specify the gender in the explanation. Infer the gender from the context if not explicitly stated.
+For character names, ALWAYS specify the gender in both the explanation and the gender field. Infer from context if not explicitly stated.
+
+Short descriptions: ULTRA-MINIMAL! 2-4 words max. Examples: "male knight", "female mage", "ancient city", "fire spell", "noble title"
+
+Long descriptions: Rich, immersive details for storytelling (e.g., "Elara stands tall with silver hair flowing like a river under moonlight, her emerald eyes reflecting centuries of guarded secrets...")
 
 Only extract terms that are important for understanding the story
 
 Avoid common words or phrases that don't need explanation
 
 Focus on proper nouns, unique concepts, and specialized terminology
-
-Provide clear, helpful explanations that would help a reader understand the context.
 
 Use confidence scores: 9-10 for crucial terms, 7-8 for important terms, 5-6 for useful terms, skip terms below 5
 
@@ -169,7 +181,7 @@ export class DictionaryExtractorService {
     return !!(apiKey && this.settings?.model);
   }
 
-  private buildExtractionPrompt(text: string): string {
+  private buildExtractionPrompt(text: string, existingTerms?: Array<{ term: string; explanation: string }>): string {
     if (!this.settings) return text;
 
     const activeCategories = [];
@@ -183,12 +195,20 @@ export class DictionaryExtractorService {
       activeCategories.push(...this.settings.customCategories);
     }
 
-    const prompt = `Extract dictionary terms from the following translated text. Focus on these categories: ${activeCategories.join(', ')}.
+    let prompt = `Extract dictionary terms from the following translated text. Focus on these categories: ${activeCategories.join(', ')}.
 
 Text to analyze:
 ${text}
 
-Extract only terms from the specified categories above. Return the response as valid JSON.`;
+Extract only terms from the specified categories above.`;
+
+    // If there are existing terms, mention them so AI can suggest updates
+    if (existingTerms && existingTerms.length > 0) {
+      prompt += `\n\nExisting dictionary terms (if any appear in the text, you can suggest updated descriptions):
+${existingTerms.map(t => `- ${t.term}: ${t.explanation}`).join('\n')}`;
+    }
+
+    prompt += `\n\nReturn the response as valid JSON with both short explanations and detailed longDescription fields.`;
 
     return prompt;
   }
@@ -216,6 +236,10 @@ Extract only terms from the specified categories above. Return the response as v
       };
     }
 
+    // Get existing dictionary terms to check for updates
+    const existingDictionaryTerms = this.getExistingTerms();
+    const existingExtendedDescriptions = this.getExistingExtendedDescriptions();
+
     // Initialize AI with the appropriate API key
     const genAI = new GoogleGenerativeAI(apiKey);
 
@@ -225,7 +249,7 @@ Extract only terms from the specified categories above. Return the response as v
         systemInstruction: EXTRACTION_SYSTEM_INSTRUCTION
       });
 
-      const prompt = this.buildExtractionPrompt(text);
+      const prompt = this.buildExtractionPrompt(text, existingDictionaryTerms);
       const result = await model.generateContent(prompt);
       const response = await result.response;
       const responseText = response.text();
@@ -258,25 +282,41 @@ Extract only terms from the specified categories above. Return the response as v
         };
       }
 
-      // Filter and validate terms, and exclude existing dictionary terms
+      // Filter and validate terms
       const validTerms = parsedResponse.terms
         .filter((term: any) => 
           term.term && 
           term.explanation && 
           term.category && 
           typeof term.confidence === 'number' &&
-          term.confidence >= 5 &&
-          !isTermInDictionary(term.term) // Exclude terms already in dictionary
+          term.confidence >= 5
         )
-        .map((term: any) => ({
-          term: term.term.trim(),
-          explanation: term.explanation.trim(),
-          category: term.category.trim(),
-          confidence: Math.min(10, Math.max(1, term.confidence))
-        }));
+        .map((term: any) => {
+          const termLower = term.term.toLowerCase().trim();
+          const isExisting = isTermInDictionary(term.term);
+          const existingExtended = existingExtendedDescriptions.get(termLower);
+          
+          return {
+            term: term.term.trim(),
+            explanation: term.explanation.trim(),
+            longDescription: term.longDescription?.trim() || '',
+            category: term.category.trim(),
+            confidence: Math.min(10, Math.max(1, term.confidence)),
+            gender: term.gender,
+            isUpdate: isExisting && text.toLowerCase().includes(termLower),
+            existingLongDescription: existingExtended?.longDescription
+          };
+        });
+
+      // Separate new terms from update suggestions
+      const newTerms = validTerms.filter((t: ExtractedTerm) => !t.isUpdate);
+      const updateSuggestions = validTerms.filter((t: ExtractedTerm) => t.isUpdate);
+
+      // Combine them (updates first so user sees them)
+      const allTerms = [...updateSuggestions, ...newTerms];
 
       return {
-        terms: validTerms,
+        terms: allTerms,
         success: true
       };
 
@@ -287,6 +327,27 @@ Extract only terms from the specified categories above. Return the response as v
         success: false,
         error: `Extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`
       };
+    }
+  }
+
+  private getExistingTerms(): Array<{ term: string; explanation: string }> {
+    try {
+      const stored = localStorage.getItem('dictionaryTerms');
+      if (!stored) return [];
+      return JSON.parse(stored);
+    } catch {
+      return [];
+    }
+  }
+
+  private getExistingExtendedDescriptions(): Map<string, any> {
+    try {
+      const stored = localStorage.getItem('extendedDescriptions');
+      if (!stored) return new Map();
+      const parsed = JSON.parse(stored);
+      return new Map(Object.entries(parsed));
+    } catch {
+      return new Map();
     }
   }
 }

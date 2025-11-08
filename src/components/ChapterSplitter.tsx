@@ -14,13 +14,18 @@ import {
   List,
   ListItem,
   ListItemText,
+  Chip,
+  Tooltip,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import CheckIcon from "@mui/icons-material/Check";
 import { encodingForModel} from "js-tiktoken"
 import EditIcon from "@mui/icons-material/Edit";
+import VisibilityIcon from "@mui/icons-material/Visibility";
  import { DictionaryEditModal } from "./DictionaryEditModal";
  import { dictionaryEventManager } from '../utils/dictionaryEventManager';
+import ViewExtendedDescriptionDialog from './ViewExtendedDescriptionDialog';
+import { extendedDescriptionService, ExtendedDescription } from '../utils/extendedDescriptionService';
 
 interface DictionaryTerm {
   term: string;
@@ -52,6 +57,8 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content, chapterTitle
   const [tokenCounts, setTokenCounts] = useState<number[]>([]);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingTermIndex, setEditingTermIndex] = useState<number | null>(null);
+  const [viewDescriptionOpen, setViewDescriptionOpen] = useState(false);
+  const [selectedDescription, setSelectedDescription] = useState<ExtendedDescription | null>(null);
 
   useEffect(() => {
     const storedTexts = JSON.parse(localStorage.getItem("optionalTexts") || "[]");
@@ -306,24 +313,61 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content, chapterTitle
             </Button>
           </Box>
           <List>
-            {dictionary.map((item, index) => (
-              <ListItem key={index} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <ListItemText primary={item.term} secondary={item.explanation} />
-                <Box>
-                  <IconButton 
-                    onClick={() => handleEditOpen(index)} 
-                    sx={{
-                      color: '#7c3aed',
-                      '&:hover': {
-                        backgroundColor: 'rgba(124, 58, 237, 0.1)',
-                      },
-                    }}
-                  >
-                    <EditIcon />
-                  </IconButton>
-                </Box>
-              </ListItem>
-            ))}
+            {dictionary.map((item, index) => {
+              const extendedDesc = extendedDescriptionService.getExtendedDescription(item.term);
+              
+              return (
+                <ListItem key={index} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Box display="flex" alignItems="center" gap={1} flex={1}>
+                    <ListItemText primary={item.term} secondary={item.explanation} />
+                    {extendedDesc && (
+                      <Chip
+                        label="Extended"
+                        size="small"
+                        sx={{
+                          backgroundColor: '#7c3aed',
+                          color: '#ffffff',
+                          fontSize: '0.7rem',
+                          height: '20px',
+                        }}
+                      />
+                    )}
+                  </Box>
+                  <Box>
+                    {extendedDesc && (
+                      <Tooltip title="View Extended Description">
+                        <IconButton 
+                          onClick={() => {
+                            setSelectedDescription(extendedDesc);
+                            setViewDescriptionOpen(true);
+                          }}
+                          sx={{
+                            color: '#7c3aed',
+                            '&:hover': {
+                              backgroundColor: 'rgba(124, 58, 237, 0.1)',
+                            },
+                          }}
+                          size="small"
+                        >
+                          <VisibilityIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                    <IconButton 
+                      onClick={() => handleEditOpen(index)} 
+                      sx={{
+                        color: '#7c3aed',
+                        '&:hover': {
+                          backgroundColor: 'rgba(124, 58, 237, 0.1)',
+                        },
+                      }}
+                    >
+                      <EditIcon />
+                    </IconButton>
+                  </Box>
+                </ListItem>
+              );
+            })}
           </List>
         </AccordionDetails>
       </Accordion>
@@ -492,6 +536,16 @@ const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content, chapterTitle
     </Grid>
   ))}
 </Grid>
+
+      {/* View Extended Description Dialog */}
+      <ViewExtendedDescriptionDialog
+        open={viewDescriptionOpen}
+        onClose={() => {
+          setViewDescriptionOpen(false);
+          setSelectedDescription(null);
+        }}
+        description={selectedDescription}
+      />
     </Box>
   );
 };

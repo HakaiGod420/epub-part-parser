@@ -29,6 +29,8 @@ import {
   ListItemText,
   Divider,
   LinearProgress,
+  Popover,
+  Chip,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -54,6 +56,7 @@ import { openRouterService, OpenRouterModel } from '../utils/openRouterService';
 import { DEEPSEEK_MODELS, deepSeekService } from '../utils/deepSeekService';
 import { dictionaryExtractorService, ExtractedTerm } from '../utils/dictionaryExtractorService';
 import { dictionaryEventManager } from '../utils/dictionaryEventManager';
+import { extendedDescriptionService, ExtendedDescription } from '../utils/extendedDescriptionService';
 import TermsExtractionPopup from './TermsExtractionPopup';
 
 interface TranslationModalProps {
@@ -81,6 +84,7 @@ interface ModalSettings {
   maxWidth: number;
   showOriginalText: boolean;
   deviceMode: 'mobile' | 'pc';
+  highlightDictionaryTerms: boolean; // New setting for term highlighting
 }
 
 const defaultModalSettings: ModalSettings = {
@@ -92,6 +96,7 @@ const defaultModalSettings: ModalSettings = {
   maxWidth: 800,
   showOriginalText: false,
   deviceMode: 'mobile',
+  highlightDictionaryTerms: true, // Enabled by default
 };
 
 const mobileFonts = [
@@ -217,6 +222,10 @@ const TranslationModal: React.FC<TranslationModalProps> = ({
   const [extractedTerms, setExtractedTerms] = useState<ExtractedTerm[]>([]);
   const [extractionError, setExtractionError] = useState<string | null>(null);
   const [showExtractionPopup, setShowExtractionPopup] = useState(false);
+  
+  // Term tooltip state
+  const [termPopupAnchor, setTermPopupAnchor] = useState<HTMLElement | null>(null);
+  const [selectedTerm, setSelectedTerm] = useState<{ term: string; description: ExtendedDescription | null } | null>(null);
   
   // Reading progress state
   const [readingProgress, setReadingProgress] = useState(0);
@@ -553,7 +562,10 @@ const TranslationModal: React.FC<TranslationModalProps> = ({
   const handleAddTermToDictionary = (term: ExtractedTerm) => {
     const success = dictionaryEventManager.addTerm({
       term: term.term,
-      explanation: term.explanation
+      explanation: term.explanation,
+      longDescription: term.longDescription,
+      gender: term.gender,
+      category: term.category
     });
     
     if (!success) {
@@ -572,6 +584,154 @@ const TranslationModal: React.FC<TranslationModalProps> = ({
     const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim());
     const theme = themes[settings.theme];
     
+    // Get all dictionary terms if highlighting is enabled
+    const allDictionaryTerms = settings.highlightDictionaryTerms 
+      ? dictionaryEventManager.getTerms()
+      : [];
+    
+    // Build a map of all possible matches (including partial names) to their full term
+    const termMatchMap = new Map<string, string>(); // matchText -> fullTermName
+    
+    if (settings.highlightDictionaryTerms && allDictionaryTerms.length > 0) {
+      allDictionaryTerms.forEach(dictTerm => {
+        const fullName = dictTerm.term;
+        const fullNameLower = fullName.toLowerCase();
+        
+        // Add the full name
+        termMatchMap.set(fullNameLower, fullName);
+        
+        // Add individual words (for names like "John Smith" -> match "John" or "Smith")
+        const words = fullName.split(/\s+/).filter(w => w.length > 2); // Only words with 3+ chars
+        words.forEach(word => {
+          const wordLower = word.toLowerCase();
+          // Only add if not already mapped (prefer full names)
+          if (!termMatchMap.has(wordLower)) {
+            termMatchMap.set(wordLower, fullName);
+          }
+        });
+      });
+    }
+    
+    const handleTermClick = (event: React.MouseEvent<HTMLSpanElement>, matchedText: string) => {
+      event.stopPropagation();
+      
+      // Find the full term name from the matched text
+      const fullTermName = termMatchMap.get(matchedText.toLowerCase()) || matchedText;
+      
+      // Try to get extended description
+      const extendedDesc = extendedDescriptionService.getExtendedDescription(fullTermName);
+      
+      setSelectedTerm({ term: fullTermName, description: extendedDesc });
+      setTermPopupAnchor(event.currentTarget);
+    };
+    
+    const highlightTerms = (paragraph: string): React.ReactNode => {
+      if (!settings.highlightDictionaryTerms || termMatchMap.size === 0) {
+        // No highlighting - return formatted HTML
+        const formatted = paragraph
+          .replace(/\*(.*?)\*/g, '<em>$1</em>')
+          .replace(/"([^"]*)"/g, '"$1"');
+        return <span dangerouslySetInnerHTML={{ __html: formatted }} />;
+      }
+      
+      // Create regex to match all possible terms (full names + individual words)
+      // Sort by length descending to match longer terms first
+      const sortedTerms = Array.from(termMatchMap.keys())
+        .sort((a, b) => b.length - a.length);
+      
+      const termsPattern = sortedTerms
+        .map(term => term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) // Escape special chars
+        .join('|');
+      const regex = new RegExp(`\\b(${termsPattern})\\b`, 'gi');
+      
+      const parts: React.ReactNode[] = [];
+      let lastIndex = 0;
+      let match;
+      let keyCounter = 0;
+      
+      // Apply italic and quote formatting first
+      let workingText = paragraph
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/"([^"]*)"/g, '"$1"');
+      
+      // Track which positions have already been matched (to avoid overlapping highlights)
+      const matchedRanges: Array<{start: number, end: number}> = [];
+      
+      // Find all term matches in the formatted text
+      const matches: Array<{index: number, text: string, length: number}> = [];
+      while ((match = regex.exec(workingText)) !== null) {
+        matches.push({
+          index: match.index,
+          text: match[0],
+          length: match[0].length
+        });
+      }
+      
+      // Filter out overlapping matches (keep longer ones)
+      const filteredMatches = matches.filter(m => {
+        const overlaps = matchedRanges.some(range => 
+          (m.index >= range.start && m.index < range.end) ||
+          (m.index + m.length > range.start && m.index + m.length <= range.end) ||
+          (m.index <= range.start && m.index + m.length >= range.end)
+        );
+        if (!overlaps) {
+          matchedRanges.push({ start: m.index, end: m.index + m.length });
+          return true;
+        }
+        return false;
+      });
+      
+      // Build the output with highlighted terms
+      filteredMatches.forEach(m => {
+        // Add text before match
+        if (m.index > lastIndex) {
+          const beforeText = workingText.substring(lastIndex, m.index);
+          parts.push(
+            <span key={`text-${keyCounter++}`} dangerouslySetInnerHTML={{ __html: beforeText }} />
+          );
+        }
+        
+        // Add highlighted term
+        parts.push(
+          <span
+            key={`term-${keyCounter++}`}
+            onClick={(e) => handleTermClick(e, m.text)}
+            style={{
+              color: '#a78bfa', // Purple color
+              fontWeight: 500,
+              cursor: 'pointer',
+              textDecoration: 'underline',
+              textDecorationStyle: 'dotted',
+              textDecorationColor: 'rgba(167, 139, 250, 0.5)',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = '#c4b5fd';
+              e.currentTarget.style.textDecorationStyle = 'solid';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = '#a78bfa';
+              e.currentTarget.style.textDecorationStyle = 'dotted';
+            }}
+          >
+            {m.text}
+          </span>
+        );
+        
+        lastIndex = m.index + m.length;
+      });
+      
+      // Add remaining text
+      if (lastIndex < workingText.length) {
+        const remainingText = workingText.substring(lastIndex);
+        parts.push(
+          <span key={`text-${keyCounter++}`} dangerouslySetInnerHTML={{ __html: remainingText }} />
+        );
+      }
+      
+      return parts.length > 0 ? <>{parts}</> : <span dangerouslySetInnerHTML={{ __html: workingText }} />;
+    };
+    
     return paragraphs.map((paragraph, index) => {
       if (paragraph.trim() === '***') {
         return (
@@ -589,10 +749,6 @@ const TranslationModal: React.FC<TranslationModalProps> = ({
         );
       }
       
-      const formattedParagraph = paragraph
-        .replace(/\*(.*?)\*/g, '<em>$1</em>')
-        .replace(/"([^"]*)"/g, '"$1"');
-      
       return (
         <Typography 
           key={index} 
@@ -605,18 +761,19 @@ const TranslationModal: React.FC<TranslationModalProps> = ({
             textAlign: settings.textAlign,
             mb: 2,
             color: theme.text,
-            userSelect: 'text', // Enable text selection
-            WebkitUserSelect: 'text', // For Safari
-            MozUserSelect: 'text', // For Firefox
-            msUserSelect: 'text', // For IE/Edge
-            cursor: 'text', // Show text cursor
+            userSelect: 'text',
+            WebkitUserSelect: 'text',
+            MozUserSelect: 'text',
+            msUserSelect: 'text',
+            cursor: 'text',
             '& em': {
               fontStyle: 'italic',
               color: theme.accent,
             }
           }}
-          dangerouslySetInnerHTML={{ __html: formattedParagraph }}
-        />
+        >
+          {highlightTerms(paragraph)}
+        </Typography>
       );
     });
   }, [settings]);
@@ -1606,6 +1763,32 @@ const TranslationModal: React.FC<TranslationModalProps> = ({
                   }}
                 />
               </Box>
+
+              <Divider sx={{ my: 2, backgroundColor: currentTheme.border }} />
+
+              {/* Highlight Dictionary Terms Toggle */}
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box>
+                  <Typography sx={{ color: currentTheme.text, fontWeight: 500 }}>
+                    Highlight Dictionary Terms
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: currentTheme.secondary, mt: 0.5 }}>
+                    Highlight and make dictionary terms clickable to show extended descriptions
+                  </Typography>
+                </Box>
+                <Switch
+                  checked={settings.highlightDictionaryTerms}
+                  onChange={(e) => setSettings(prev => ({ ...prev, highlightDictionaryTerms: e.target.checked }))}
+                  sx={{
+                    '& .MuiSwitch-switchBase.Mui-checked': {
+                      color: currentTheme.accent,
+                    },
+                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                      backgroundColor: currentTheme.accent,
+                    },
+                  }}
+                />
+              </Box>
             </Paper>
 
             {/* Theme Settings */}
@@ -1726,7 +1909,140 @@ const TranslationModal: React.FC<TranslationModalProps> = ({
         isLoading={isExtracting}
         error={extractionError}
         onAddTerm={handleAddTermToDictionary}
+        sourceText={translatedText}
       />
+
+      {/* Term Extended Description Popover */}
+      <Popover
+        open={Boolean(termPopupAnchor)}
+        anchorEl={termPopupAnchor}
+        onClose={() => {
+          setTermPopupAnchor(null);
+          setSelectedTerm(null);
+        }}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'center',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'center',
+        }}
+        PaperProps={{
+          sx: {
+            maxWidth: 400,
+            p: 2,
+            backgroundColor: currentTheme.paper,
+            border: `2px solid ${currentTheme.accent}`,
+            borderRadius: 2,
+            boxShadow: `0 8px 32px rgba(124, 58, 237, 0.3)`,
+          }
+        }}
+      >
+        {selectedTerm && (
+          <Box>
+            {/* Term Header */}
+            <Box sx={{ mb: 2 }}>
+              <Typography 
+                variant="h6" 
+                sx={{ 
+                  fontWeight: 'bold', 
+                  color: currentTheme.accent,
+                  mb: 1 
+                }}
+              >
+                {selectedTerm.term}
+              </Typography>
+              
+              {/* Category and Gender Chips */}
+              {selectedTerm.description && (
+                <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+                  <Chip
+                    label={selectedTerm.description.category}
+                    size="small"
+                    sx={{
+                      backgroundColor: 'rgba(124, 58, 237, 0.2)',
+                      color: currentTheme.accent,
+                      fontSize: '0.75rem',
+                    }}
+                  />
+                  {selectedTerm.description.gender && (
+                    <Chip
+                      label={selectedTerm.description.gender}
+                      size="small"
+                      sx={{
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        color: '#60a5fa',
+                        fontSize: '0.75rem',
+                      }}
+                    />
+                  )}
+                </Box>
+              )}
+            </Box>
+
+            {/* Short Description (from main dictionary) */}
+            {(() => {
+              const dictTerm = dictionaryEventManager.getTerms().find(
+                t => t.term.toLowerCase() === selectedTerm.term.toLowerCase()
+              );
+              return dictTerm ? (
+                <Box sx={{ mb: 2 }}>
+                  <Typography 
+                    variant="body2" 
+                    sx={{ 
+                      color: '#10b981',
+                      fontWeight: 500,
+                      fontStyle: 'italic',
+                    }}
+                  >
+                    {dictTerm.explanation}
+                  </Typography>
+                </Box>
+              ) : null;
+            })()}
+
+            {/* Long Description (Extended) */}
+            {selectedTerm.description ? (
+              <>
+                <Divider sx={{ my: 2, borderColor: currentTheme.border }} />
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    color: currentTheme.text,
+                    lineHeight: 1.6,
+                    whiteSpace: 'pre-wrap',
+                  }}
+                >
+                  {selectedTerm.description.longDescription}
+                </Typography>
+                
+                {/* Last Updated */}
+                <Typography 
+                  variant="caption" 
+                  sx={{ 
+                    color: currentTheme.secondary,
+                    mt: 2,
+                    display: 'block',
+                  }}
+                >
+                  Last updated: {new Date(selectedTerm.description.lastUpdated).toLocaleDateString()}
+                </Typography>
+              </>
+            ) : (
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: currentTheme.secondary,
+                  fontStyle: 'italic',
+                }}
+              >
+                No extended description available
+              </Typography>
+            )}
+          </Box>
+        )}
+      </Popover>
     </Dialog>
   );
 };
