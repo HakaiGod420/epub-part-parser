@@ -24,7 +24,7 @@ import React, { useState, useEffect } from 'react';
          setEditedExplanation(term.explanation);
        }
        setPrevOpen(open);
-     }, [open, term.term, term.explanation]); // Track values, not object reference
+     }, [open, term.term, term.explanation, prevOpen]); // Track values, not object reference
    
      const handleSave = () => {
        onSave(editedTerm, editedExplanation);

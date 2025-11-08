@@ -43,9 +43,9 @@ const DEFAULT_TOGGLES = [true, false, false];
 
 const ChapterSplitter: React.FC<ChapterSplitterProps> = ({ content, chapterTitle, bookTitle = "" }) => {
   const [parts, setParts] = useState<string[]>([]);
-  const [charCount, setCharCount] = useState<number>(1000);
+  const [charCount] = useState<number>(1000);
   const [numParts, setNumParts] = useState<number>(1);
-  const [splitByCharCount, setSplitByCharCount] = useState<boolean>(false);
+  const [splitByCharCount] = useState<boolean>(false);
   const [includeDictionary, setIncludeDictionary] = useState<boolean>(true);
   const [includeChapterTitle, setIncludeChapterTitle] = useState<boolean>(false);
   const [optionalTexts, setOptionalTexts] = useState<string[]>(DEFAULT_TEXTS);

@@ -7,8 +7,6 @@ import {
   Button,
   List,
   ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
   IconButton,
   Typography,
   Box,
@@ -29,7 +27,6 @@ import {
   Update as UpdateIcon,
 } from '@mui/icons-material';
 import { ExtractedTerm } from '../utils/dictionaryExtractorService';
-import { extendedDescriptionService, ExtendedDescription } from '../utils/extendedDescriptionService';
 import { dictionaryEventManager } from '../utils/dictionaryEventManager';
 
 interface TermsExtractionPopupProps {
@@ -90,10 +87,6 @@ const TermsExtractionPopup: React.FC<TermsExtractionPopupProps> = ({
       }
       return newSet;
     });
-  };
-
-  const getExtendedDescription = (termName: string): ExtendedDescription | null => {
-    return extendedDescriptionService.getExtendedDescription(termName);
   };
 
   const getCategoryColor = (category: string): string => {

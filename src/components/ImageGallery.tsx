@@ -78,7 +78,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ images }) => {
             <ImageListItem key={index} onClick={() => handleOpen(index)}>
               <img
                 src={url}
-                alt={`Gallery image ${index + 1}`}
+                alt={`${index + 1}`}
                 loading="lazy"
                 style={{ cursor: 'pointer', width: '100%', display: 'block' }}
               />
@@ -111,7 +111,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ images }) => {
           {selectedIndex !== null && imageURLs[selectedIndex] && (
             <img
               src={imageURLs[selectedIndex]!}
-              alt={`Large view of image ${selectedIndex + 1}`}
+              alt={`Enlarged view ${selectedIndex + 1}`}
               style={{ maxWidth: '100%', maxHeight: '80vh', display: 'block', margin: '0 auto' }}
             />
           )}
