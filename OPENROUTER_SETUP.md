@@ -119,7 +119,7 @@ If you're upgrading from a previous version:
 
 ### For Novel Translation (High Quality)
 - **OpenRouter**: GPT-4 variants, Claude models
-- **Google**: gemini-2.5-pro
+- **Google**: gemini-3-pro-preview, gemini-2.5-pro
 
 ### For Speed (Fast Translation)  
 - **OpenRouter**: GPT-3.5-turbo, faster models

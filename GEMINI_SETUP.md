@@ -17,7 +17,7 @@
    - Click the settings gear icon (⚙️) in the top right
    - Select "Translation Settings"
    - Paste your API key in the "Gemini API Key" field
-   - Choose your preferred model (recommended: gemini-2.5-pro)
+   - Choose your preferred model (recommended: gemini-3-pro-preview or gemini-2.5-pro)
    - Click "Save Settings"
 
 ## Usage Instructions
@@ -58,7 +58,8 @@
 
 ## Model Recommendations
 
-- **gemini-2.5-pro**: Best quality translations, latest model
+- **gemini-3-pro-preview**: Cutting-edge model with advanced capabilities (preview)
+- **gemini-2.5-pro**: Best quality translations, proven reliability
 - **gemini-2.5-flash**: Faster translations, good quality, more cost-effective
 - **gemini-2.0-flash**: Reliable performance with good speed
 - **gemini-2.5-flash-lite**: Lightweight option for basic translations
