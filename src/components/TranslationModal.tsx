@@ -50,6 +50,7 @@ import {
   ArrowBack as ArrowBackIcon,
   ArrowForward as ArrowForwardIcon,
   Info as InfoIcon,
+  PhotoLibrary as GalleryIcon,
 } from '@mui/icons-material';
 import { translationService, GEMINI_MODELS, TranslationProvider } from '../utils/translationService';
 import { openRouterService, OpenRouterModel } from '../utils/openRouterService';
@@ -58,6 +59,7 @@ import { dictionaryExtractorService, ExtractedTerm } from '../utils/dictionaryEx
 import { dictionaryEventManager } from '../utils/dictionaryEventManager';
 import { extendedDescriptionService, ExtendedDescription } from '../utils/extendedDescriptionService';
 import TermsExtractionPopup from './TermsExtractionPopup';
+import { ImageGallery } from './ImageGallery';
 
 interface TranslationModalProps {
   open: boolean;
@@ -79,7 +81,7 @@ interface ModalSettings {
   fontSize: number;
   fontFamily: string;
   lineHeight: number;
-  theme: 'dark' | 'black' | 'white';
+  theme: 'dark' | 'black' | 'white' | 'sepia' | 'ocean';
   textAlign: 'left' | 'center' | 'justify';
   maxWidth: number;
   showOriginalText: boolean;
@@ -185,6 +187,24 @@ const themes = {
     border: 'rgba(124, 58, 237, 0.15)',
     gradient: 'linear-gradient(135deg, rgba(124, 58, 237, 0.05) 0%, rgba(6, 182, 212, 0.05) 100%)',
   },
+  sepia: {
+    background: '#f4ecd8',
+    paper: '#efe6d5',
+    text: '#5c4b37',
+    secondary: '#8b7355',
+    accent: '#b8860b',
+    border: 'rgba(184, 134, 11, 0.2)',
+    gradient: 'linear-gradient(135deg, rgba(184, 134, 11, 0.1) 0%, rgba(139, 115, 85, 0.1) 100%)',
+  },
+  ocean: {
+    background: '#0c1929',
+    paper: '#132f4c',
+    text: '#b2bac2',
+    secondary: '#5090d3',
+    accent: '#29b6f6',
+    border: 'rgba(41, 182, 246, 0.2)',
+    gradient: 'linear-gradient(135deg, rgba(41, 182, 246, 0.1) 0%, rgba(80, 144, 211, 0.1) 100%)',
+  },
 };
 
 // TabPanel component outside the main component to prevent re-creation
@@ -227,6 +247,9 @@ const TranslationModal: React.FC<TranslationModalProps> = ({
   const [termPopupAnchor, setTermPopupAnchor] = useState<HTMLElement | null>(null);
   const [selectedTerm, setSelectedTerm] = useState<{ term: string; description: ExtendedDescription | null } | null>(null);
   
+  // Image Gallery state
+  const [showImageGallery, setShowImageGallery] = useState(false);
+
   // Reading progress state
   const [readingProgress, setReadingProgress] = useState(0);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -794,22 +817,27 @@ const TranslationModal: React.FC<TranslationModalProps> = ({
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <TranslateIcon sx={{ color: currentTheme.accent }} />
           {images.length > 0 && (
-            <Tooltip title="This chapter contains images">
-              <InfoIcon 
+            <Tooltip title="View Chapter Images">
+              <IconButton 
+                onClick={() => setShowImageGallery(true)}
                 sx={{ 
-                  color: '#f59e0b', // Amber/orange color
-                  fontSize: '1.8rem', // Much larger
-                  backgroundColor: 'rgba(245, 158, 11, 0.1)', // Subtle background
-                  borderRadius: '50%',
-                  padding: '6px',
+                  ml: 1,
+                  backgroundColor: 'rgba(245, 158, 11, 0.1)',
                   border: '1px solid rgba(245, 158, 11, 0.3)',
                   '&:hover': {
                     backgroundColor: 'rgba(245, 158, 11, 0.2)',
                     transform: 'scale(1.1)',
                   },
                   transition: 'all 0.2s ease',
-                }} 
-              />
+                }}
+              >
+                <GalleryIcon 
+                  sx={{ 
+                    color: '#f59e0b', // Amber/orange color
+                    fontSize: '1.5rem',
+                  }} 
+                />
+              </IconButton>
             </Tooltip>
           )}
           <Typography variant="h5" sx={{ fontWeight: 'bold', color: currentTheme.text }}>
@@ -1874,6 +1902,52 @@ const TranslationModal: React.FC<TranslationModalProps> = ({
                     </Box>
                   }
                 />
+                <FormControlLabel 
+                  value="sepia" 
+                  control={
+                    <Radio 
+                      sx={{ 
+                        color: currentTheme.secondary,
+                        '&.Mui-checked': { color: currentTheme.accent },
+                      }} 
+                    />
+                  } 
+                  label={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box sx={{ 
+                        width: 20, 
+                        height: 20, 
+                        backgroundColor: '#f4ecd8', 
+                        borderRadius: '4px', 
+                        border: '2px solid #d4c4a8' 
+                      }} />
+                      <Typography sx={{ color: currentTheme.text }}>Sepia Theme</Typography>
+                    </Box>
+                  }
+                />
+                <FormControlLabel 
+                  value="ocean" 
+                  control={
+                    <Radio 
+                      sx={{ 
+                        color: currentTheme.secondary,
+                        '&.Mui-checked': { color: currentTheme.accent },
+                      }} 
+                    />
+                  } 
+                  label={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box sx={{ 
+                        width: 20, 
+                        height: 20, 
+                        backgroundColor: '#132f4c', 
+                        borderRadius: '4px', 
+                        border: '2px solid #29b6f6' 
+                      }} />
+                      <Typography sx={{ color: currentTheme.text }}>Ocean Theme</Typography>
+                    </Box>
+                  }
+                />
               </RadioGroup>
             </Paper>
           </Box>
@@ -2043,6 +2117,14 @@ const TranslationModal: React.FC<TranslationModalProps> = ({
           </Box>
         )}
       </Popover>
+
+      {/* Image Gallery */}
+      <ImageGallery
+        open={showImageGallery}
+        onClose={() => setShowImageGallery(false)}
+        images={images}
+        title={chapterTitle}
+      />
     </Dialog>
   );
 };

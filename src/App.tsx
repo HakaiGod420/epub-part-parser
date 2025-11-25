@@ -28,9 +28,9 @@ const App: React.FC = () => {
 
   // Expand/Collapse state for each section
   const [fileUploadExpanded, setFileUploadExpanded] = useState<boolean>(true);
-  const [chapterSelectionExpanded, setChapterSelectionExpanded] = useState<boolean>(true);
-  const [chapterSplitterExpanded, setChapterSplitterExpanded] = useState<boolean>(true);
-  const [chapterContentExpanded, setChapterContentExpanded] = useState<boolean>(true);
+  const [chapterSelectionExpanded, setChapterSelectionExpanded] = useState<boolean>(false);
+  const [chapterSplitterExpanded, setChapterSplitterExpanded] = useState<boolean>(false);
+  const [chapterContentExpanded, setChapterContentExpanded] = useState<boolean>(false);
   const [translationExpanded, setTranslationExpanded] = useState<boolean>(true);
 
   const handleFileUpload = async (file: File) => {

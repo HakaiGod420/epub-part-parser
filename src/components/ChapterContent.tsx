@@ -11,7 +11,7 @@ interface ChapterContentProps {
 
 const ChapterContent: React.FC<ChapterContentProps> = ({ content, images, chapterTitle }) => {
   const [showFullContent, setShowFullContent] = useState(false);
-  const [showImages, setShowImages] = useState(false);
+  const [showImageGallery, setShowImageGallery] = useState(false);
   const previewLength = 300; // Number of characters to show in the preview
 
   // Memoize the stripped content to avoid recalculation
@@ -41,8 +41,12 @@ const ChapterContent: React.FC<ChapterContentProps> = ({ content, images, chapte
     setShowFullContent(!showFullContent);
   };
 
-  const handleToggleImages = () => {
-    setShowImages(!showImages);
+  const handleOpenImageGallery = () => {
+    setShowImageGallery(true);
+  };
+
+  const handleCloseImageGallery = () => {
+    setShowImageGallery(false);
   };
 
   const hasImages = images && images.length > 0;
@@ -96,7 +100,7 @@ const ChapterContent: React.FC<ChapterContentProps> = ({ content, images, chapte
           <Box sx={{ mb: 3, textAlign: 'center' }}>
             <Button 
               variant="outlined" 
-              onClick={handleToggleImages}
+              onClick={handleOpenImageGallery}
               sx={{
                 color: '#a78bfa',
                 borderColor: 'rgba(124, 58, 237, 0.4)',
@@ -107,15 +111,8 @@ const ChapterContent: React.FC<ChapterContentProps> = ({ content, images, chapte
                 },
               }}
             >
-              {showImages ? `Hide Images (${images.length})` : `Show Images (${images.length})`}
+              View Images ({images.length})
             </Button>
-          </Box>
-        )}
-
-        {/* Image Gallery - Only render when user wants to see images */}
-        {hasImages && showImages && (
-          <Box sx={{ mb: 3 }}>
-            <ImageGallery images={images} />
           </Box>
         )}
 
@@ -158,6 +155,16 @@ const ChapterContent: React.FC<ChapterContentProps> = ({ content, images, chapte
           </Box>
         )}
       </Paper>
+
+      {/* Image Gallery Modal */}
+      {hasImages && (
+        <ImageGallery
+          open={showImageGallery}
+          onClose={handleCloseImageGallery}
+          images={images}
+          title={chapterTitle}
+        />
+      )}
     </Box>
   );
 };
