@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { IconButton, Menu, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
 import Dictionary from './Dictionary';
@@ -7,13 +7,22 @@ import StorageCleanupModal from './StorageCleanupModal';
 
 interface GearMenuProps {
   bookTitle?: string;
+  onPasteTextModeChange?: (enabled: boolean) => void;
 }
 
-const GearMenu: React.FC<GearMenuProps> = ({ bookTitle = "" }) => {
+const GearMenu: React.FC<GearMenuProps> = ({ bookTitle = "", onPasteTextModeChange }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [dictionaryOpen, setDictionaryOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [storageCleanupOpen, setStorageCleanupOpen] = useState(false);
+
+  // Check for paste text mode changes when settings dialog closes
+  const handleCloseSettings = () => {
+    setSettingsOpen(false);
+    // Notify parent of potential paste text mode change
+    const pasteTextMode = localStorage.getItem('pasteTextMode') === 'true';
+    onPasteTextModeChange?.(pasteTextMode);
+  };
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -44,10 +53,6 @@ const GearMenu: React.FC<GearMenuProps> = ({ bookTitle = "" }) => {
   const handleOpenSettings = () => {
     setSettingsOpen(true);
     handleClose();
-  };
-
-  const handleCloseSettings = () => {
-    setSettingsOpen(false);
   };
 
   return (

@@ -5,6 +5,7 @@ import ChapterContent from "./components/ChapterContent";
 import ChapterSplitter from "./components/ChapterSplitter";
 import TranslationComponent from "./components/TranslationComponent";
 import GearMenu from "./components/GearMenu"; // Import GearMenu
+import PasteTextTranslation from "./components/PasteTextTranslation"; // Import PasteTextTranslation
 import { parseEpub, getChapterContent, getBookTitle } from "./utils/epubParser";
 import { stripHtml } from "./utils/stripHtml";
 import { Box, Container, Typography, Paper, Alert, IconButton, Collapse, Chip } from "@mui/material";
@@ -32,6 +33,15 @@ const App: React.FC = () => {
   const [chapterSplitterExpanded, setChapterSplitterExpanded] = useState<boolean>(false);
   const [chapterContentExpanded, setChapterContentExpanded] = useState<boolean>(false);
   const [translationExpanded, setTranslationExpanded] = useState<boolean>(true);
+  
+  // Paste Text Mode state - loads from localStorage
+  const [pasteTextMode, setPasteTextMode] = useState<boolean>(() => {
+    return localStorage.getItem('pasteTextMode') === 'true';
+  });
+
+  const handlePasteTextModeChange = (enabled: boolean) => {
+    setPasteTextMode(enabled);
+  };
 
   const handleFileUpload = async (file: File) => {
     const { book, chapters } = await parseEpub(file);
@@ -242,131 +252,36 @@ const App: React.FC = () => {
             )}
           </Box>
         </Box>
-        <GearMenu bookTitle={bookTitle} />
+        <GearMenu bookTitle={bookTitle} onPasteTextModeChange={handlePasteTextModeChange} />
       </Box>
     </Paper>
     </motion.div>
 
     {/* Main Content */}
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      {/* File Upload Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-      >
-      <Paper elevation={0} sx={{ 
-        borderRadius: 4,
-        backgroundColor: 'background.paper',
-        overflow: 'hidden',
-        transition: 'all 0.3s ease',
-      }}>
-        <Box sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          padding: 2.5,
-          background: fileUploadExpanded 
-            ? 'linear-gradient(90deg, rgba(124, 58, 237, 0.05) 0%, rgba(6, 182, 212, 0.05) 100%)'
-            : 'transparent',
-          borderBottom: fileUploadExpanded ? '1px solid rgba(124, 58, 237, 0.15)' : 'none',
-          cursor: 'pointer',
-          '&:hover': {
-            background: 'linear-gradient(90deg, rgba(124, 58, 237, 0.08) 0%, rgba(6, 182, 212, 0.08) 100%)',
-          }
-        }}
-        onClick={toggleFileUpload}
-        >
-          <Typography variant="h6" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
-            📤 File Upload
-          </Typography>
-          <IconButton 
-            sx={{ 
-              color: 'primary.main',
-            }}
-          >
-            {fileUploadExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-          </IconButton>
-        </Box>
-        <Collapse in={fileUploadExpanded}>
-          <Box sx={{ padding: 3 }}>
-            <FileUploader onFileUpload={handleFileUpload} />
-          </Box>
-        </Collapse>
-      </Paper>
-      </motion.div>
-
-      {/* Chapter Selection */}
-      {chapters.length > 0 && (
+      {/* Paste Text Mode - Show only the paste text translation component */}
+      {pasteTextMode ? (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
         >
-        <Paper elevation={0} sx={{ 
-          borderRadius: 4,
-          backgroundColor: 'background.paper',
-          overflow: 'hidden',
-          transition: 'all 0.3s ease',
-        }}>
-          <Box sx={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center',
-            padding: 2.5,
-            background: chapterSelectionExpanded 
-              ? 'linear-gradient(90deg, rgba(124, 58, 237, 0.05) 0%, rgba(6, 182, 212, 0.05) 100%)'
-              : 'transparent',
-            borderBottom: chapterSelectionExpanded ? '1px solid rgba(124, 58, 237, 0.15)' : 'none',
-            cursor: 'pointer',
-            '&:hover': {
-              background: 'linear-gradient(90deg, rgba(124, 58, 237, 0.08) 0%, rgba(6, 182, 212, 0.08) 100%)',
-            }
-          }}
-          onClick={toggleChapterSelection}
-          >
-            <Typography variant="h6" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
-              📚 Chapter Selection
-              <Chip 
-                label={chapters.length} 
-                size="small" 
-                sx={{ 
-                  ml: 1,
-                  backgroundColor: 'rgba(124, 58, 237, 0.2)',
-                  color: 'primary.light',
-                  fontWeight: 700,
-                }}
-              />
-            </Typography>
-            <IconButton 
-              sx={{ 
-                color: 'primary.main',
-              }}
-            >
-              {chapterSelectionExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-            </IconButton>
-          </Box>
-          <Collapse in={chapterSelectionExpanded}>
-            <Box sx={{ padding: 3 }}>
-              <ChapterSelector 
-                chapters={chapters} 
-                onSelectChapter={handleSelectChapter} 
-                epubName={epubName}
-                selectedChapterIndex={currentChapterIndex}
-              />
-            </Box>
-          </Collapse>
-        </Paper>
+          <Paper elevation={0} sx={{ 
+            borderRadius: 4,
+            backgroundColor: 'background.paper',
+            overflow: 'hidden',
+            padding: 3,
+          }}>
+            <PasteTextTranslation bookTitle={bookTitle || "Custom Translation"} />
+          </Paper>
         </motion.div>
-      )}
-
-      {/* Chapter Processing */}
-      {chapterContent && (
+      ) : (
         <>
+          {/* File Upload Section */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
           >
           <Paper elevation={0} sx={{ 
             borderRadius: 4,
@@ -379,152 +294,267 @@ const App: React.FC = () => {
               justifyContent: 'space-between', 
               alignItems: 'center',
               padding: 2.5,
-              background: chapterSplitterExpanded 
+              background: fileUploadExpanded 
                 ? 'linear-gradient(90deg, rgba(124, 58, 237, 0.05) 0%, rgba(6, 182, 212, 0.05) 100%)'
                 : 'transparent',
-              borderBottom: chapterSplitterExpanded ? '1px solid rgba(124, 58, 237, 0.15)' : 'none',
+              borderBottom: fileUploadExpanded ? '1px solid rgba(124, 58, 237, 0.15)' : 'none',
               cursor: 'pointer',
               '&:hover': {
                 background: 'linear-gradient(90deg, rgba(124, 58, 237, 0.08) 0%, rgba(6, 182, 212, 0.08) 100%)',
               }
             }}
-            onClick={toggleChapterSplitter}
+            onClick={toggleFileUpload}
             >
               <Typography variant="h6" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
-                ✂️ Chapter Splitter
+                📤 File Upload
               </Typography>
               <IconButton 
                 sx={{ 
                   color: 'primary.main',
                 }}
               >
-                {chapterSplitterExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                {fileUploadExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
               </IconButton>
             </Box>
-            <Collapse in={chapterSplitterExpanded}>
+            <Collapse in={fileUploadExpanded}>
               <Box sx={{ padding: 3 }}>
-                <ChapterSplitter 
-                  content={stripHtml(chapterContent).replace(currentTitle ?? "", "").trim()} 
-                  chapterTitle={currentTitle || undefined}
-                  bookTitle={bookTitle}
-                />
+                <FileUploader onFileUpload={handleFileUpload} />
               </Box>
             </Collapse>
           </Paper>
           </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-          >
-          <Paper elevation={0} sx={{ 
-            borderRadius: 4,
-            backgroundColor: 'background.paper',
-            overflow: 'hidden',
-            transition: 'all 0.3s ease',
-            '& pre': { 
-              whiteSpace: 'pre-wrap',
-              fontFamily: 'monospace',
-              fontSize: '0.875rem'
-            }
-          }}>
-            <Box sx={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center',
-              padding: 2.5,
-              background: chapterContentExpanded 
-                ? 'linear-gradient(90deg, rgba(124, 58, 237, 0.05) 0%, rgba(6, 182, 212, 0.05) 100%)'
-                : 'transparent',
-              borderBottom: chapterContentExpanded ? '1px solid rgba(124, 58, 237, 0.15)' : 'none',
-              cursor: 'pointer',
-              '&:hover': {
-                background: 'linear-gradient(90deg, rgba(124, 58, 237, 0.08) 0%, rgba(6, 182, 212, 0.08) 100%)',
-              }
-            }}
-            onClick={toggleChapterContent}
+          {/* Chapter Selection */}
+          {chapters.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
             >
-              <Typography variant="h6" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
-                📄 Chapter Content
-              </Typography>
-              <IconButton 
-                sx={{ 
-                  color: 'primary.main',
-                }}
+            <Paper elevation={0} sx={{ 
+              borderRadius: 4,
+              backgroundColor: 'background.paper',
+              overflow: 'hidden',
+              transition: 'all 0.3s ease',
+            }}>
+              <Box sx={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                padding: 2.5,
+                background: chapterSelectionExpanded 
+                  ? 'linear-gradient(90deg, rgba(124, 58, 237, 0.05) 0%, rgba(6, 182, 212, 0.05) 100%)'
+                  : 'transparent',
+                borderBottom: chapterSelectionExpanded ? '1px solid rgba(124, 58, 237, 0.15)' : 'none',
+                cursor: 'pointer',
+                '&:hover': {
+                  background: 'linear-gradient(90deg, rgba(124, 58, 237, 0.08) 0%, rgba(6, 182, 212, 0.08) 100%)',
+                }
+              }}
+              onClick={toggleChapterSelection}
               >
-                {chapterContentExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-              </IconButton>
-            </Box>
-            <Collapse in={chapterContentExpanded}>
-              <Box sx={{ padding: 3 }}>
-                <ChapterContent 
-                  content={chapterContent} 
-                  images={images} 
-                  chapterTitle={currentTitle || undefined}
-                />
+                <Typography variant="h6" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  📚 Chapter Selection
+                  <Chip 
+                    label={chapters.length} 
+                    size="small" 
+                    sx={{ 
+                      ml: 1,
+                      backgroundColor: 'rgba(124, 58, 237, 0.2)',
+                      color: 'primary.light',
+                      fontWeight: 700,
+                    }}
+                  />
+                </Typography>
+                <IconButton 
+                  sx={{ 
+                    color: 'primary.main',
+                  }}
+                >
+                  {chapterSelectionExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                </IconButton>
               </Box>
-            </Collapse>
-          </Paper>
-          </motion.div>
+              <Collapse in={chapterSelectionExpanded}>
+                <Box sx={{ padding: 3 }}>
+                  <ChapterSelector 
+                    chapters={chapters} 
+                    onSelectChapter={handleSelectChapter} 
+                    epubName={epubName}
+                    selectedChapterIndex={currentChapterIndex}
+                  />
+                </Box>
+              </Collapse>
+            </Paper>
+            </motion.div>
+          )}
 
-          {/* Translation Section - Separate from Chapter Content */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.5 }}
-          >
-          <Paper elevation={0} sx={{ 
-            borderRadius: 4,
-            backgroundColor: 'background.paper',
-            overflow: 'hidden',
-            transition: 'all 0.3s ease',
-          }}>
-            <Box sx={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center',
-              padding: 2.5,
-              background: translationExpanded 
-                ? 'linear-gradient(90deg, rgba(124, 58, 237, 0.05) 0%, rgba(6, 182, 212, 0.05) 100%)'
-                : 'transparent',
-              borderBottom: translationExpanded ? '1px solid rgba(124, 58, 237, 0.15)' : 'none',
-              cursor: 'pointer',
-              '&:hover': {
-                background: 'linear-gradient(90deg, rgba(124, 58, 237, 0.08) 0%, rgba(6, 182, 212, 0.08) 100%)',
-              }
-            }}
-            onClick={toggleTranslation}
-            >
-              <Typography variant="h6" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
-                🌐 Translation
-              </Typography>
-              <IconButton 
-                sx={{ 
-                  color: 'primary.main',
-                }}
+          {/* Chapter Processing */}
+          {chapterContent && (
+            <>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.3 }}
               >
-                {translationExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-              </IconButton>
-            </Box>
-            <Collapse in={translationExpanded}>
-              <Box sx={{ padding: 3 }}>
-                <TranslationComponent 
-                  text={stripHtml(chapterContent)} 
-                  chapterTitle={currentTitle || undefined}
-                  images={images}
-                  bookTitle={bookTitle}
-                  onPreviousChapter={handlePreviousChapter}
-                  onNextChapter={handleNextChapter}
-                  hasPreviousChapter={hasPreviousChapter}
-                  hasNextChapter={hasNextChapter}
-                  currentChapter={currentChapterIndex >= 0 ? currentChapterIndex + 1 : undefined}
-                  totalChapters={chapters.length > 0 ? chapters.length : undefined}
-                />
-              </Box>
-            </Collapse>
-          </Paper>
-          </motion.div>
+              <Paper elevation={0} sx={{ 
+                borderRadius: 4,
+                backgroundColor: 'background.paper',
+                overflow: 'hidden',
+                transition: 'all 0.3s ease',
+              }}>
+                <Box sx={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center',
+                  padding: 2.5,
+                  background: chapterSplitterExpanded 
+                    ? 'linear-gradient(90deg, rgba(124, 58, 237, 0.05) 0%, rgba(6, 182, 212, 0.05) 100%)'
+                    : 'transparent',
+                  borderBottom: chapterSplitterExpanded ? '1px solid rgba(124, 58, 237, 0.15)' : 'none',
+                  cursor: 'pointer',
+                  '&:hover': {
+                    background: 'linear-gradient(90deg, rgba(124, 58, 237, 0.08) 0%, rgba(6, 182, 212, 0.08) 100%)',
+                  }
+                }}
+                onClick={toggleChapterSplitter}
+                >
+                  <Typography variant="h6" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    ✂️ Chapter Splitter
+                  </Typography>
+                  <IconButton 
+                    sx={{ 
+                      color: 'primary.main',
+                    }}
+                  >
+                    {chapterSplitterExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                  </IconButton>
+                </Box>
+                <Collapse in={chapterSplitterExpanded}>
+                  <Box sx={{ padding: 3 }}>
+                    <ChapterSplitter 
+                      content={stripHtml(chapterContent).replace(currentTitle ?? "", "").trim()} 
+                      chapterTitle={currentTitle || undefined}
+                      bookTitle={bookTitle}
+                    />
+                  </Box>
+                </Collapse>
+              </Paper>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.4 }}
+              >
+              <Paper elevation={0} sx={{ 
+                borderRadius: 4,
+                backgroundColor: 'background.paper',
+                overflow: 'hidden',
+                transition: 'all 0.3s ease',
+                '& pre': { 
+                  whiteSpace: 'pre-wrap',
+                  fontFamily: 'monospace',
+                  fontSize: '0.875rem'
+                }
+              }}>
+                <Box sx={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center',
+                  padding: 2.5,
+                  background: chapterContentExpanded 
+                    ? 'linear-gradient(90deg, rgba(124, 58, 237, 0.05) 0%, rgba(6, 182, 212, 0.05) 100%)'
+                    : 'transparent',
+                  borderBottom: chapterContentExpanded ? '1px solid rgba(124, 58, 237, 0.15)' : 'none',
+                  cursor: 'pointer',
+                  '&:hover': {
+                    background: 'linear-gradient(90deg, rgba(124, 58, 237, 0.08) 0%, rgba(6, 182, 212, 0.08) 100%)',
+                  }
+                }}
+                onClick={toggleChapterContent}
+                >
+                  <Typography variant="h6" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    📄 Chapter Content
+                  </Typography>
+                  <IconButton 
+                    sx={{ 
+                      color: 'primary.main',
+                    }}
+                  >
+                    {chapterContentExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                  </IconButton>
+                </Box>
+                <Collapse in={chapterContentExpanded}>
+                  <Box sx={{ padding: 3 }}>
+                    <ChapterContent 
+                      content={chapterContent} 
+                      images={images} 
+                      chapterTitle={currentTitle || undefined}
+                    />
+                  </Box>
+                </Collapse>
+              </Paper>
+              </motion.div>
+
+              {/* Translation Section - Separate from Chapter Content */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.5 }}
+              >
+              <Paper elevation={0} sx={{ 
+                borderRadius: 4,
+                backgroundColor: 'background.paper',
+                overflow: 'hidden',
+                transition: 'all 0.3s ease',
+              }}>
+                <Box sx={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center',
+                  padding: 2.5,
+                  background: translationExpanded 
+                    ? 'linear-gradient(90deg, rgba(124, 58, 237, 0.05) 0%, rgba(6, 182, 212, 0.05) 100%)'
+                    : 'transparent',
+                  borderBottom: translationExpanded ? '1px solid rgba(124, 58, 237, 0.15)' : 'none',
+                  cursor: 'pointer',
+                  '&:hover': {
+                    background: 'linear-gradient(90deg, rgba(124, 58, 237, 0.08) 0%, rgba(6, 182, 212, 0.08) 100%)',
+                  }
+                }}
+                onClick={toggleTranslation}
+                >
+                  <Typography variant="h6" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    🌐 Translation
+                  </Typography>
+                  <IconButton 
+                    sx={{ 
+                      color: 'primary.main',
+                    }}
+                  >
+                    {translationExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                  </IconButton>
+                </Box>
+                <Collapse in={translationExpanded}>
+                  <Box sx={{ padding: 3 }}>
+                    <TranslationComponent 
+                      text={stripHtml(chapterContent)} 
+                      chapterTitle={currentTitle || undefined}
+                      images={images}
+                      bookTitle={bookTitle}
+                      onPreviousChapter={handlePreviousChapter}
+                      onNextChapter={handleNextChapter}
+                      hasPreviousChapter={hasPreviousChapter}
+                      hasNextChapter={hasNextChapter}
+                      currentChapter={currentChapterIndex >= 0 ? currentChapterIndex + 1 : undefined}
+                      totalChapters={chapters.length > 0 ? chapters.length : undefined}
+                    />
+                  </Box>
+                </Collapse>
+              </Paper>
+              </motion.div>
+            </>
+          )}
         </>
       )}
     </Box>

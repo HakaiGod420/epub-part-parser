@@ -75,6 +75,8 @@ interface TranslationModalProps {
   currentChapter?: number;
   totalChapters?: number;
   images: Uint8Array[]; // images from chapter to show indicator if exist
+  // Auto-translate prop for paste text mode
+  autoTranslate?: boolean;
 }
 
 interface ModalSettings {
@@ -226,6 +228,7 @@ const TranslationModal: React.FC<TranslationModalProps> = ({
   hasNextChapter = false,
   currentChapter,
   totalChapters,
+  autoTranslate = false,
 }) => {
   const [translatedText, setTranslatedText] = useState<string>('');
   const [isTranslating, setIsTranslating] = useState(false);
@@ -351,6 +354,31 @@ const TranslationModal: React.FC<TranslationModalProps> = ({
       }
     }
   }, [open]);
+
+  // Auto-translate when modal opens with autoTranslate flag
+  useEffect(() => {
+    if (open && autoTranslate && text && text.trim() && !isTranslating && !translatedText) {
+      // Small delay to ensure modal is fully rendered
+      const timer = setTimeout(() => {
+        if (translationService.isConfigured()) {
+          setIsTranslating(true);
+          setError(null);
+          
+          translationService.translateTextStream(text, (chunk) => {
+            setTranslatedText(prev => prev + chunk);
+          }).catch((err) => {
+            console.error('Auto-translation error:', err);
+            const errorMessage = err instanceof Error ? err.message : 'Translation failed';
+            setError(errorMessage);
+          }).finally(() => {
+            setIsTranslating(false);
+          });
+        }
+      }, 300);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [open, autoTranslate, text]);
 
   const loadOpenRouterModels = async () => {
     try {

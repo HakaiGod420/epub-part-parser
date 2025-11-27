@@ -70,6 +70,9 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
 
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const [isExtractorOpen, setIsExtractorOpen] = useState(false);
+  
+  // Paste Text Mode setting
+  const [pasteTextMode, setPasteTextMode] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -98,6 +101,10 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
 
       const currentExtractorSettings = dictionaryExtractorService.getSettings();
       setExtractorSettings(currentExtractorSettings);
+      
+      // Load paste text mode setting
+      const savedPasteTextMode = localStorage.getItem('pasteTextMode');
+      setPasteTextMode(savedPasteTextMode === 'true');
     }
   }, [open]);
 
@@ -236,6 +243,10 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
 
     saveTranslationContextSettings(contextSettings);
     dictionaryExtractorService.saveSettings(extractorSettings);
+    
+    // Save paste text mode setting
+    localStorage.setItem('pasteTextMode', pasteTextMode.toString());
+    
     onClose();
   };
 
@@ -274,6 +285,10 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
     const currentExtractorSettings = dictionaryExtractorService.getSettings();
     setExtractorSettings(currentExtractorSettings);
     
+    // Reset paste text mode setting
+    const savedPasteTextMode = localStorage.getItem('pasteTextMode');
+    setPasteTextMode(savedPasteTextMode === 'true');
+    
     onClose();
   };
 
@@ -294,6 +309,38 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
       </DialogTitle>
       <DialogContent>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 1 }}>
+          {/* Paste Text Mode Toggle */}
+          <Box sx={{ border: '1px solid #444', borderRadius: 1, p: 2, backgroundColor: '#333' }}>
+            <Typography variant="h6" sx={{ color: '#7c3aed', mb: 2 }}>
+              Translation Mode
+            </Typography>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={pasteTextMode}
+                  onChange={(e) => setPasteTextMode(e.target.checked)}
+                  sx={{
+                    '& .MuiSwitch-switchBase.Mui-checked': {
+                      color: '#7c3aed',
+                    },
+                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                      backgroundColor: '#7c3aed',
+                    },
+                  }}
+                />
+              }
+              label={
+                <Box>
+                  <Typography sx={{ color: '#ffffff' }}>Paste Text Translation Mode</Typography>
+                  <Typography variant="body2" sx={{ color: '#b0b0b0' }}>
+                    Enable this to translate pasted Korean text directly instead of EPUB files. 
+                    All EPUB sections will be hidden and you can paste any text to translate with full features (dictionary, term extraction, etc.)
+                  </Typography>
+                </Box>
+              }
+            />
+          </Box>
+
           {/* Translation Provider Selection */}
           <Box sx={{ border: '1px solid #444', borderRadius: 1, p: 2, backgroundColor: '#333' }}>
             <Typography variant="h6" sx={{ color: '#7c3aed', mb: 2 }}>
